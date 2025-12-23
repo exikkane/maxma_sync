@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<addon scheme="3.0">
+    <id>maxma_sync</id>
+    <version>1.0</version>
+    <priority>10000</priority>
+    <position>0</position>
+    <default_language>ru</default_language>
+    <status>active</status>
+    <name>MAXMA</name>
+    <supplier>Exikane</supplier>
+    <description>Интеграция с сервисом Maxma</description>
+    <language_variables>
+        <item id="maxma" lang="ru">Maxma</item>
+    </language_variables>
+
+    <settings edition_type="ROOT">
+        <sections>
+            <section id="general">
+                <items>
+                    <item id="api_key">
+                        <type>input</type>
+                        <name>API Key</name>
+                    </item>
+                    <item id="maxma_cache_ttl">
+                        <type>input</type>
+                        <default_value>3600</default_value>
+                        <name>Срок хранения информации о бонусах пользователя в кеше (в секундах)</name>
+                    </item>
+                </items>
+            </section>
+        </sections>
+    </settings>
+    <queries>
+        <item for="install">
+            CREATE TABLE ?:maxma_queue (
+            id mediumint(8) unsigned NOT NULL auto_increment,
+            type varchar(64) NOT NULL DEFAULT '',           -- client_create | order_set | order_confirm | order_cancel | order_return
+            entity_id mediumint(8) unsigned NOT NULL DEFAULT '0', -- user_id или order_id
+            payload text NOT NULL,                          -- JSON с данными для MAXMA
+            status varchar(16) NOT NULL DEFAULT 'new',     -- new | processing | done | error
+            error_message text DEFAULT NULL,
+            created_at int(11) unsigned NOT NULL DEFAULT '0',
+            updated_at int(11) unsigned NOT NULL DEFAULT '0',
+            PRIMARY KEY (id),
+            INDEX idx_status (status),
+            INDEX idx_type_entity (type, entity_id)
+            ) ENGINE=MyISAM DEFAULT CHARSET UTF8;
+        </item>
+        <item for="install">
+            CREATE TABLE ?:maxma_user_cache (
+            user_id INT NOT NULL PRIMARY KEY,
+            balance TEXT DEFAULT NULL,
+            balance_updated_at INT DEFAULT 0,
+            history TEXT DEFAULT NULL,
+            history_updated_at INT DEFAULT 0
+            );
+        </item>
+    </queries>
+
+</addon>

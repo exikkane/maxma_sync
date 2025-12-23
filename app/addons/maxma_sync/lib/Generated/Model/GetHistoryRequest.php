@@ -1,0 +1,79 @@
+<?php
+
+namespace CloudLoyalty\Api\Generated\Model;
+
+/**
+ * @deprecated in favour of GetBonusHistoryRequest, left for backward compatibility
+ * @see GetBonusHistoryRequest
+ */
+class GetHistoryRequest
+{
+    /**
+     * Данные о клиенте, для которого делается запрос.
+     *
+     * Делать запрос можно по номеру телефона клиента, по номеру карты или по внешнему идентификатору.
+     *
+     *
+     * @var ClientQuery
+     */
+    protected $client;
+
+    /**
+     * 
+     *
+     * @var GetHistoryRequestPagination
+     */
+    protected $pagination;
+
+    /**
+     * Данные о клиенте, для которого делается запрос.
+     *
+     * Делать запрос можно по номеру телефона клиента, по номеру карты или по внешнему идентификатору.
+     *
+     *
+     * @return ClientQuery
+     */
+    public function getClient()
+    {
+        return $this->client;
+    }
+
+    /**
+     * Данные о клиенте, для которого делается запрос.
+     *
+     * Делать запрос можно по номеру телефона клиента, по номеру карты или по внешнему идентификатору.
+     *
+     *
+     * @param ClientQuery $client
+     *
+     * @return self
+     */
+    public function setClient(ClientQuery $client)
+    {
+        $this->client = $client;
+        return $this;
+    }
+
+    /**
+     * 
+     *
+     * @return GetHistoryRequestPagination
+     */
+    public function getPagination()
+    {
+        return $this->pagination;
+    }
+
+    /**
+     * 
+     *
+     * @param GetHistoryRequestPagination $pagination
+     *
+     * @return self
+     */
+    public function setPagination(GetHistoryRequestPagination $pagination)
+    {
+        $this->pagination = $pagination;
+        return $this;
+    }
+}
