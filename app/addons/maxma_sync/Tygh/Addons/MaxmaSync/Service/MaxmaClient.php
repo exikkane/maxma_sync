@@ -25,7 +25,7 @@ class MaxmaClient
     }
 
     /**
-     * Получить единственный экземпляр
+     * Получаем единственный экземпляр
      */
     public static function getInstance(array $settings): self
     {
@@ -44,10 +44,7 @@ class MaxmaClient
             $request = RequestFactory::make($method, $payload);
             return $this->client->$method($request);
         } catch (TransportException | ProcessingException $e) {
-            $this->logger->error("Error calling {$method}: {$e->getMessage()}", [
-                'payload' => $payload
-            ]);
-            throw $e;
+            fn_print_r($e->getMessage(), $e->getHint()); // TODO реализовать нормальное логирование
         }
     }
 
@@ -61,16 +58,36 @@ class MaxmaClient
     public function getBalance($request): array {
         $response = $this->call(RequestTypes::GET_BALANCE, $request);
 
+        if (!$response) {
+            return [];
+        }
+
+        $client_info = $response->getClient();
+
         return [
-            'balance' => $response->getBonuses(),
-            'pending_bonuses' => $response->getPendingBonuses(),
+            'balance' => $client_info->getBonuses(),
+            'pending_bonuses' => $client_info->getPendingBonuses(),
         ];
     }
     public function getBonusHistory($request): array {
         $response = $this->call(RequestTypes::GET_BONUS_HISTORY, $request);
-        return [
-            'history' => $response->getBonusHistory(),
-            'pagination' => $response->getPagination()->getTotal(),
-        ];
+
+        if (!$response) {
+            return [];
+        }
+
+        $history_info = $response->getHistory();
+        $history = [];
+        foreach ($history_info as $entry) {
+            $history[] = [
+                'date' => $entry->getAt()->format('Y-m-d H:i:s'),
+                'amount' => $entry->getAmount(),
+                'operation' => $entry->getOperation(),
+                'operation_name' => $entry->getOperationName(),
+            ];
+        }
+        $history['pagination'] = $response->getPagination()->getTotal();
+
+        return $history;
     }
 }

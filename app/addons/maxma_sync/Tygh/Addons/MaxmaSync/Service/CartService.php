@@ -30,10 +30,11 @@ class CartService
 
             return $client->calculatePurchase($payload);
         } catch (ProcessingException $e) {
+
             return [$e->getMessage(),$e->getHint()];
         }
     }
-    private function generateCalculationQuery($cart, $promotion_code)
+    public function generateCalculationQuery($cart, $order_id = 0, $promotion_code = '')
     {
         $data = [
             'client' => [
@@ -44,8 +45,8 @@ class CartService
                 'code' => 'CS-Cart',
                 'name' => 'CS-Cart'
             ],
-            'qty' => $cart['amount'] ?? 1,
-            'promocode' => $promotion_code
+            'promocode' => $promotion_code,
+            'applyBonuses' => $cart['reward_points']['points_info']['in_use']['points'] ?? 0
         ];
 
         $data['rows'] = [];

@@ -73,10 +73,15 @@ class RequestFactory
                     ->setClient($clientObj);
 
             case RequestTypes::CALCULATE_PURCHASE:
+            case RequestTypes::SET_ORDER:
                 if (!isset($payload['calculationQuery'])) {
-                    throw new \InvalidArgumentException('Payload for CALCULATE_PURCHASE must contain "calculationQuery" key.');
+                    throw new \InvalidArgumentException('Payload for CALCULATE_PURCHASE and SET_ORDER must contain "calculationQuery" key.');
                 }
-                $request = new Model\V2CalculatePurchaseRequest();
+                if ($method === RequestTypes::SET_ORDER) {
+                    $request = new Model\V2SetOrderRequest();
+                } else {
+                    $request = new Model\V2CalculatePurchaseRequest();
+                }
 
                 $clientObj = (new Model\ClientQuery())
                     ->setPhoneNumber($payload['calculationQuery']['client']['phoneNumber'] ?? '')
@@ -111,8 +116,11 @@ class RequestFactory
                     ->setShop($shopObj)
                     ->setRows($rows)
                     ->setApplyBonuses(123)// TODO
-                    ->setCollectBonuses(123)// TODO
-                    ->setPromocode($payload['promocode']);
+                    ->setCollectBonuses(123);// TODO
+
+                if (isset($payload['promocode'])) {
+                    $calculationQueryObj->setPromocode($payload['promocode']);
+                }
 
                 if (isset($payload['orderId'])) {
                     $request->setOrderId($payload['orderId']);

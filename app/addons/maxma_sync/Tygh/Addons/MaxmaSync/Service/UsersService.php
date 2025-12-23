@@ -24,6 +24,7 @@ class UsersService
         );
 
         if ($maxma_user_balance && $this->isCacheValid((int) $maxma_user_balance['balance_updated_at'])) {
+            $maxma_user_balance['balance'] = json_decode($maxma_user_balance['balance'], true);
             return $maxma_user_balance['balance'];
         }
         $client = MaxmaClient::getInstance($this->settings);
@@ -33,8 +34,10 @@ class UsersService
                 'phoneNumber' => $user_data['phone'],
             ];
             $balance = $client->getBalance($payload);
-            self::saveUserBalance($user_id, $balance);
 
+            if (!empty($balance)) {
+                self::saveUserBalance($user_id, $balance);
+            }
             return $balance;
         } catch (ProcessingException $e) {
             if ($maxma_user_balance && $maxma_user_balance['balance']) {
@@ -51,10 +54,22 @@ class UsersService
 
     public static function saveUserBalance(int $user_id, array $balance): void
     {
+        fn_save_user_additional_data(POINTS, $balance['balance'], $user_id);
+
+        $change_points = array(
+            'user_id' => $user_id,
+            'amount' => $balance['balance'],
+            'timestamp' => TIME,
+            'action' => '',
+            'reason' => 'Maxma Sync'
+        );
+
+        db_query("REPLACE INTO ?:reward_point_changes ?e", $change_points);
+
         db_replace_into('maxma_user_cache', [
             'user_id' => $user_id,
             'balance' => json_encode($balance, JSON_UNESCAPED_UNICODE),
-            'updated_at' => TIME,
+            'balance_updated_at' => TIME,
         ]);
     }
 
@@ -66,6 +81,8 @@ class UsersService
         );
 
         if ($maxma_user_history && $this->isCacheValid((int) $maxma_user_history['history_updated_at'])) {
+            $maxma_user_history['history'] = json_decode($maxma_user_history['history'], true);
+
             return $maxma_user_history['history'];
         }
         $client = MaxmaClient::getInstance($this->settings);
@@ -75,7 +92,9 @@ class UsersService
                 'phoneNumber' => $user_data['phone'],
             ];
             $history = $client->getBonusHistory($payload);
-            self::saveUserHistory($user_id, $history);
+            if (!empty($history)) {
+                self::saveUserHistory($user_id, $history);
+            }
 
             return $history;
         } catch (ProcessingException $e) {
@@ -98,7 +117,7 @@ class UsersService
         db_replace_into('maxma_user_cache',[
             'user_id' => $user_id,
             'history' => json_encode($history, JSON_UNESCAPED_UNICODE),
-            'updated_at' => TIME,
+            'history_updated_at' => TIME,
         ]);
     }
     private function isCacheValid(?int $updated_at): bool
