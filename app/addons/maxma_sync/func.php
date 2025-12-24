@@ -35,7 +35,7 @@ function fn_maxma_sync_place_order_post($cart, $auth, $action, $issuer_id, $pare
 
     $payload = [
         'orderId' => (string)$order_id,
-        'calculationQuery' => $cart_service->generatecalculationQuery($cart, $order_id),
+        'calculationQuery' => $cart_service->generatecalculationQuery($cart),
     ];
 
     QueueService::add(RequestTypes::SET_ORDER, $order_id, $payload);
@@ -53,7 +53,6 @@ function fn_maxma_sync_change_order_status_post($order_id, $status_to, $status_f
     if ($queue_type) {
         $payload = [
             'orderId' => $order_id,
-            'userId' => $order_info['user_id'],
         ];
         QueueService::add($queue_type, $order_id, $payload);
     }
@@ -67,6 +66,12 @@ function fn_maxma_sync_get_user_info($user_id, $get_profile, $profile_id, &$user
     $settings = Registry::get('addons.maxma_sync');
     $user_service = new UsersService($settings);
 
-    $user_data['balance'] = $user_service->getUserBalance($user_id, $user_data);
-    $user_data['history'] = $user_service->getUserHistory($user_id, $user_data);
+    $balance = $user_service->getUserBalance($user_id, $user_data);
+    $history =  $user_service->getUserHistory($user_id, $user_data);
+
+    $user_data['balance'] = $balance;
+    $user_data['history'] = $history;
+
+    $user_service::saveUserBalance($user_id, $balance);
+    $user_service::saveUserHistory($user_id, $history);
 }

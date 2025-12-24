@@ -3,55 +3,71 @@
 namespace Tygh\Addons\MaxmaSync\Service;
 
 use CloudLoyalty\Api\Client;
-use CloudLoyalty\Api\Exception\TransportException;
 use CloudLoyalty\Api\Exception\ProcessingException;
+use Tygh\Addons\MaxmaSync\Helpers\FactoryBuilders\CalculatePurchaseRequestBuilder;
+use Tygh\Addons\MaxmaSync\Helpers\FactoryBuilders\CancelOrderRequestBuilder;
+use Tygh\Addons\MaxmaSync\Helpers\FactoryBuilders\ConfirmOrderRequestBuilder;
+use Tygh\Addons\MaxmaSync\Helpers\FactoryBuilders\GetBalanceRequestBuilder;
+use Tygh\Addons\MaxmaSync\Helpers\FactoryBuilders\GetHistoryRequestBuilder;
+use Tygh\Addons\MaxmaSync\Helpers\FactoryBuilders\NewClientRequestBuilder;
+use Tygh\Addons\MaxmaSync\Helpers\FactoryBuilders\SetOrderRequestBuilder;
+use Tygh\Addons\MaxmaSync\Helpers\FactoryBuilders\UpdateClientRequestBuilder;
 use Tygh\Addons\MaxmaSync\Helpers\MaxmaLogger;
 use Tygh\Addons\MaxmaSync\Helpers\RequestFactory;
 use Tygh\Enum\Addons\MaxmaSync\RequestTypes;
 
 class MaxmaClient
 {
-    private static ?self $instance = null;
     private Client $client;
     private MaxmaLogger $logger;
+    private RequestFactory $requestFactory;
 
-    private function __construct(array $settings)
+    public function __construct(array $settings)
     {
+        $api_key = $settings['api_key'];
+        $test_mode = $settings['maxma_test_mode'];
+
+        $server_address = $test_mode == 'Y'
+            ? 'https://api-test.maxma.com'
+            : 'https://api.maxma.com';
+
         $this->client = new Client();
 
-        $api_key = $settings['api_key'];
         $this->client->setProcessingKey($api_key);
+        $this->client->setServerAddress($server_address);
         $this->logger = new MaxmaLogger();
-    }
 
-    /**
-     * Получаем единственный экземпляр
-     */
-    public static function getInstance(array $settings): self
-    {
-        if (self::$instance === null) {
-            self::$instance = new self($settings);
-        }
-        return self::$instance;
-    }
+        $this->requestFactory = new RequestFactory([
+            new NewClientRequestBuilder(),
+            new UpdateClientRequestBuilder(),
+            new ConfirmOrderRequestBuilder(),
+            new CancelOrderRequestBuilder(),
+            new CalculatePurchaseRequestBuilder(),
+            new SetOrderRequestBuilder(),
+            new GetBalanceRequestBuilder(),
+            new GetHistoryRequestBuilder(),
 
+        ]);
+    }
     /**
      * Универсальный вызов метода SDK
      */
     public function call(string $method, array $payload)
     {
         try {
-            $request = RequestFactory::make($method, $payload);
+            $request = $this->requestFactory->make($method, $payload);
             return $this->client->$method($request);
-        } catch (TransportException | ProcessingException $e) {
+        } catch (ProcessingException $e) {
+
             fn_print_r($e->getMessage(), $e->getHint()); // TODO реализовать нормальное логирование
+            throw $e;
         }
     }
 
     public function newClient($request)       { return $this->call(RequestTypes::NEW_CLIENT, $request); }
     public function calculatePurchase($request) { return $this->call(RequestTypes::CALCULATE_PURCHASE, $request); }
     public function setOrder($request)       { return $this->call(RequestTypes::SET_ORDER, $request); }
-    public function confirmOrder($request)   { return $this->call(RequestTypes::SET_ORDER, $request); }
+    public function confirmOrder($request)   { return $this->call(RequestTypes::CONFIRM_ORDER, $request); }
     public function cancelOrder($request)    { return $this->call(RequestTypes::CANCEL_ORDER, $request); }
     public function applyReturn($request)    { return $this->call(RequestTypes::APPLY_RETURN, $request); }
     public function updateClient($request)     { return $this->call(RequestTypes::UPDATE_CLIENT, $request); }
@@ -76,7 +92,8 @@ class MaxmaClient
             return [];
         }
 
-        $history_info = $response->getHistory();
+        $history_info = $response->getHistory() ?? [];
+
         $history = [];
         foreach ($history_info as $entry) {
             $history[] = [

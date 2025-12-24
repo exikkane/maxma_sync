@@ -10,6 +10,15 @@ use Tygh\Addons\MaxmaSync\Helpers\MaxmaLogger;
 
 class QueueService
 {
+    private array $settings;
+    private MaxmaClient $maxmaClient;
+
+    public function __construct(array $settings)
+    {
+        $this->settings = $settings;
+        $this->maxmaClient = new MaxmaClient($settings);
+    }
+
     /**
      * Добавить элемент в очередь
      */
@@ -19,16 +28,14 @@ class QueueService
             throw new \InvalidArgumentException("Invalid request type: {$type}");
         }
 
-        $data = [
+        return db_replace_into('maxma_queue', [
             'type' => $type,
             'entity_id' => $entity_id,
             'payload' => json_encode($payload, JSON_UNESCAPED_UNICODE),
             'status' => QueueStatuses::NEW,
             'created_at' => TIME,
             'updated_at' => TIME,
-        ];
-
-        return db_query("INSERT INTO ?:maxma_queue ?e", $data);
+        ]);
     }
 
     /**
@@ -56,23 +63,28 @@ class QueueService
         db_query("UPDATE ?:maxma_queue SET ?u WHERE id = ?i", $data, $id);
     }
 
-    public static function processQueue(): void
+    /**
+     * Обработка всей очереди
+     */
+    public function processQueue(): void
     {
         $items = self::getPending();
         if (!$items) {
             return;
         }
 
-        $settings = Registry::get('addons.maxma_sync');
-        $client   = MaxmaClient::getInstance($settings);
-        $logger   = new MaxmaLogger();
+        $client = $this->maxmaClient;
+        $logger = new MaxmaLogger();
 
         foreach ($items as $item) {
-            self::processItem($item, $client, $logger);
+            $this->processItem($item, $client, $logger);
         }
     }
 
-    private static function processItem(array $item, $client, MaxmaLogger $logger = new MaxmaLogger()): void
+    /**
+     * Обработка одного элемента очереди
+     */
+    private function processItem(array $item, MaxmaClient $client, MaxmaLogger $logger): void
     {
         try {
             self::updateStatus($item['id'], QueueStatuses::PROCESSING);

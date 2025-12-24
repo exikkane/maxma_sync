@@ -1,8 +1,11 @@
 <?php
 
 use Tygh\Addons\MaxmaSync\Service\QueueService;
+use Tygh\Registry;
 
 if ($mode == 'process_queue')
 {
-    QueueService::processQueue();
+    $settings = Registry::get('addons.maxma_sync');
+    $queue_service = new QueueService($settings);
+    $queue_service->processQueue();
 }

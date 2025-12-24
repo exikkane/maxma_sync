@@ -21,6 +21,10 @@
                         <type>input</type>
                         <name>API Key</name>
                     </item>
+                    <item id="maxma_test_mode">
+                        <type>checkbox</type>
+                        <name>Test mode</name>
+                    </item>
                     <item id="maxma_cache_ttl">
                         <type>input</type>
                         <default_value>3600</default_value>

@@ -8,17 +8,16 @@ class CartService
 {
     private array $settings;
     private string $default_phone = '+7 777 7777777';
+    private MaxmaClient $maxmaClient;
 
     public function __construct(array $settings) {
         $this->settings = $settings;
+        $this->maxmaClient = new MaxmaClient($settings);
     }
 
     public function calculateCartContent($cart, $order_id = 0, $promotion_code = '')
     {
         $calculationQuery = $this->generatecalculationQuery($cart, $promotion_code);
-
-        $client = MaxmaClient::getInstance($this->settings);
-
         try {
             $payload = [
                 'calculationQuery' => $calculationQuery,
@@ -28,13 +27,13 @@ class CartService
                 $payload['order_id'] = $order_id;
             }
 
-            return $client->calculatePurchase($payload);
+            return $this->maxmaClient->calculatePurchase($payload);
         } catch (ProcessingException $e) {
 
             return [$e->getMessage(),$e->getHint()];
         }
     }
-    public function generateCalculationQuery($cart, $order_id = 0, $promotion_code = '')
+    public function generateCalculationQuery($cart, $promotion_code = '')
     {
         $data = [
             'client' => [
@@ -46,7 +45,8 @@ class CartService
                 'name' => 'CS-Cart'
             ],
             'promocode' => $promotion_code,
-            'applyBonuses' => $cart['reward_points']['points_info']['in_use']['points'] ?? 0
+            'applyBonuses' => $cart['points_info']['in_use']['points'] ?? 0,
+            'collectBonuses' => $cart['points_info']['reward'] ?? 0
         ];
 
         $data['rows'] = [];
