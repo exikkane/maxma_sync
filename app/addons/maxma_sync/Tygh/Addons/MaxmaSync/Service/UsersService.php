@@ -20,6 +20,7 @@ class UsersService
 
     public function getUserBalance(int $user_id, array $user_data, $no_cache = false): array
     {
+        $maxma_user_balance = [];
         if (!$no_cache) {
             $maxma_user_balance = db_get_row(
                 "SELECT balance, balance_updated_at FROM ?:maxma_user_cache WHERE user_id = ?i",

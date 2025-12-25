@@ -3,6 +3,7 @@
 namespace Tygh\Addons\MaxmaSync\Service;
 
 use CloudLoyalty\Api\Exception\ProcessingException;
+use CloudLoyalty\Api\Generated\Model\V2CalculatePurchaseResponse;
 
 class CartService
 {
@@ -15,9 +16,9 @@ class CartService
         $this->maxmaClient = new MaxmaClient($settings);
     }
 
-    public function calculateCartContent($cart, $order_id = 0, $promotion_code = '')
+    public function calculateCartContent($cart, $auth, $order_id = 0, $promotion_code = '')
     {
-        $calculationQuery = $this->generatecalculationQuery($cart, $promotion_code);
+        $calculationQuery = $this->generatecalculationQuery($cart, $auth, $promotion_code);
         try {
             $payload = [
                 'calculationQuery' => $calculationQuery,
@@ -33,16 +34,16 @@ class CartService
             return [$e->getMessage(),$e->getHint()];
         }
     }
-    public function generateCalculationQuery($cart, $promotion_code = '')
+    public function generateCalculationQuery($cart, $auth, $promotion_code = '')
     {
         $data = [
             'client' => [
                 'phoneNumber' => $cart['user_data']['phone'] ?? $this->default_phone,
-                'externalId'  => (string) ($cart['user_data']['user_id'] ?? 'UNKNOWN'),
+                'externalId'  => (string) $auth['user_id'],
             ],
             'shop' => [
-                'code' => 'CS-Cart',
-                'name' => 'CS-Cart'
+                'code' => $this->settings['maxma_shop_code'],
+                'name' => $this->settings['maxma_shop_name']
             ],
             'promocode' => $promotion_code,
             'applyBonuses' => $cart['points_info']['in_use']['points'] ?? 0,
@@ -73,5 +74,24 @@ class CartService
         }
 
         return $data;
+    }
+    public function applyExternalBonuses(V2CalculatePurchaseResponse $calculation, array &$cart)
+    {
+        $rows = $calculation->getCalculationResult()->getRows();
+
+        foreach ($cart['products'] as $key => $product) {
+            foreach ($rows as $row) {
+                if ($row->getId() == $key) {
+                    $discount = (int) $row->getTotalDiscount();
+
+                    if (!empty($discount)) {
+                        $cart['products'][$key]['discount'] =+ $discount;
+                    }
+                }
+            }
+        }
+
+        $cart['subtotal_discount'] =+ (int) $calculation->getCalculationResult()->getSummary()->getTotalDiscount();
+        return $cart;
     }
 }

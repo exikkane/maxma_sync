@@ -11,12 +11,26 @@
     <description>Интеграция с сервисом Maxma</description>
     <language_variables>
         <item id="maxma" lang="ru">Maxma</item>
+        <item id="maxma_sync.process_queue" lang="ru"> Для обработки очереди запросов нажмите -
+            &lt;a class="cm-ajax cm-comet btn btn-primary" href="[process_queue_url]"&gt;
+            Обработать очередь сейчас
+            &lt;/a&gt;
+            &lt;br /&gt;&lt;br /&gt;
+        </item>
     </language_variables>
 
     <settings edition_type="ROOT">
         <sections>
             <section id="general">
                 <items>
+                    <item id="information">
+                        <type>header</type>
+                        <name>Настройки интеграции</name>
+                    </item>
+                    <item id="sync_queue">
+                        <type>info</type>
+                        <handler>fn_maxma_sync_queue</handler>
+                    </item>
                     <item id="api_key">
                         <type>input</type>
                         <name>API Key</name>
@@ -29,6 +43,16 @@
                         <type>input</type>
                         <default_value>3600</default_value>
                         <name>Срок хранения информации о бонусах пользователя в кеше (в секундах)</name>
+                    </item>
+                    <item id="maxma_shop_code">
+                        <type>input</type>
+                        <default_value>CSCart</default_value>
+                        <name>Код магазина (под этим кодом будут размещаться заказы и регистрироваться покупатели в Maxma)</name>
+                    </item>
+                    <item id="maxma_shop_name">
+                        <type>input</type>
+                        <default_value>CS-Cart</default_value>
+                        <name>Наименование магазина в Maxma</name>
                     </item>
                 </items>
             </section>

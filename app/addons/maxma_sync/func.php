@@ -6,6 +6,7 @@ use Tygh\Addons\MaxmaSync\Service\QueueService;
 use Tygh\Enum\Addons\MaxmaSync\RequestTypes;
 use Tygh\Registry;
 use Tygh\Enum\OrderStatuses;
+use Tygh\Enum\SiteArea;
 
 function fn_maxma_sync_update_profile($action, $user_data)
 {
@@ -35,7 +36,7 @@ function fn_maxma_sync_place_order_post($cart, $auth, $action, $issuer_id, $pare
 
     $payload = [
         'orderId' => (string)$order_id,
-        'calculationQuery' => $cart_service->generatecalculationQuery($cart),
+        'calculationQuery' => $cart_service->generatecalculationQuery($cart, $auth),
     ];
 
     QueueService::add(RequestTypes::SET_ORDER, $order_id, $payload);
@@ -74,4 +75,25 @@ function fn_maxma_sync_get_user_info($user_id, $get_profile, $profile_id, &$user
 
     $user_service::saveUserBalance($user_id, $balance);
     $user_service::saveUserHistory($user_id, $history);
+}
+
+function fn_maxma_sync_queue()
+{
+    return __(
+        'maxma_sync.process_queue',
+        [
+            '[process_queue_url]' => fn_url('maxma.process_queue', SiteArea::ADMIN_PANEL),
+        ]
+    );
+}
+
+function fn_maxma_sync_calculate_cart_content_before_shipping_calculation(&$cart, $auth)
+{
+    if (in_array(Registry::get('runtime.controller'), ['cart', 'checkout'])) {
+        $settings = Registry::get('addons.maxma_sync');
+        $cart_service = new CartService($settings);
+        $new_calculation = $cart_service->calculateCartContent($cart, $auth, 0, $promo_code);
+
+        $cart_service->applyExternalBonuses($new_calculation, $cart);
+    }
 }

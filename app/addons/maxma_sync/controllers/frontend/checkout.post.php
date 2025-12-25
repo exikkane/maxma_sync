@@ -1,6 +1,5 @@
 <?php
 
-use Tygh\Addons\MaxmaSync\Service\CartService;
 use Tygh\Addons\MaxmaSync\Service\UsersService;
 use Tygh\Registry;
 
@@ -23,8 +22,6 @@ if (
     $reward_points = $cart['reward_points']['points_info']['in_use']['points'] ?? 0;
 
     $settings = Registry::get('addons.maxma_sync');
-    $cart_service = new CartService($settings);
-    $new_calculation = $cart_service->calculateCartContent($cart, 0, $promo_code);
 
     $user_service = new UsersService($settings);
     $user_reward_balance = $user_service->getUserBalance($auth['user_id'], $cart['user_data'], true);
