@@ -41,7 +41,7 @@
                     </item>
                     <item id="maxma_cache_ttl">
                         <type>input</type>
-                        <default_value>3600</default_value>
+                        <default_value>120</default_value>
                         <name>Срок хранения информации о бонусах пользователя в кеше (в секундах)</name>
                     </item>
                     <item id="maxma_shop_code">
@@ -53,6 +53,21 @@
                         <type>input</type>
                         <default_value>CS-Cart</default_value>
                         <name>Наименование магазина в Maxma</name>
+                    </item>
+                    <item id="maxma_confirm_statuses">
+                        <type>input</type>
+                        <default_value>C</default_value>
+                        <name>Статусы заказа для подтверждения заказов в Maxma</name>
+                    </item>
+                    <item id="maxma_confirm_cancel">
+                        <type>input</type>
+                        <default_value>I</default_value>
+                        <name>Статусы заказа для отмены заказов в Maxma</name>
+                    </item>
+                    <item id="maxma_return_statuses">
+                        <type>input</type>
+                        <default_value>F</default_value>
+                        <name>Статусы заказа для возврата заказов в Maxma</name>
                     </item>
                 </items>
             </section>
@@ -66,7 +81,6 @@
             entity_id mediumint(8) unsigned NOT NULL DEFAULT '0', -- user_id или order_id
             payload text NOT NULL,                          -- JSON с данными для MAXMA
             status varchar(16) NOT NULL DEFAULT 'new',     -- new | processing | done | error
-            error_message text DEFAULT NULL,
             created_at int(11) unsigned NOT NULL DEFAULT '0',
             updated_at int(11) unsigned NOT NULL DEFAULT '0',
             PRIMARY KEY (id),
@@ -78,11 +92,11 @@
             CREATE TABLE ?:maxma_user_cache (
             user_id INT NOT NULL PRIMARY KEY,
             balance TEXT DEFAULT NULL,
-            balance_updated_at INT DEFAULT 0,
             history TEXT DEFAULT NULL,
-            history_updated_at INT DEFAULT 0
+            updated_at INT DEFAULT 0
             );
         </item>
+        <item for="install">ALTER TABLE ?:orders ADD maxma_promotion_data TEXT NOT NULL</item>
+        <item for="uninstall">ALTER TABLE ?:orders DROP COLUMN maxma_promotion_data</item>
     </queries>
-
 </addon>

@@ -2,140 +2,91 @@
 
 namespace Tygh\Addons\MaxmaSync\Service;
 
+use Tygh\Addons\MaxmaSync\Dto\ClientDto;
+use Tygh\Addons\MaxmaSync\Dto\ClientUpdateDto;
+use Tygh\Addons\MaxmaSync\Helpers\MaxmaLogger;
+use Tygh\Addons\MaxmaSync\Storage\UserCache;
+use Tygh\Addons\MaxmaSync\Storage\UserSession;
+use Tygh\Addons\MaxmaSync\Repository\QueueRepository;
+use Tygh\Addons\MaxmaSync\Repository\UserRepository;
 use Tygh\Enum\Addons\MaxmaSync\RequestTypes;
 use CloudLoyalty\Api\Exception\ProcessingException;
 
 class UsersService
 {
-    private array $settings;
-    private int $cache_ttl;
-    private MaxmaClient $maxmaClient;
-
-    public function __construct(array $settings)
+    public const BALANCE_CACHE_KEY = 'balance';
+    public const HISTORY_CACHE_KEY = 'history';
+    public function __construct(
+        private readonly array           $settings,
+        private array                    &$session = [],
+        private ?MaxmaClient             $maxmaClient = null,
+        private readonly QueueRepository $queue_repository = new QueueRepository(),
+        private readonly UserRepository  $user_repository = new UserRepository(),
+        private ?UserCache               $user_cache = null,
+        private ?UserSession             $user_session = null,
+        private readonly MaxmaLogger     $logger = new MaxmaLogger()
+    ) {
+        $this->maxmaClient = $this->maxmaClient ?? new MaxmaClient($this->settings);
+        $this->user_session = $this->user_session ?? new UserSession($this->session);
+        $this->user_cache = $this->user_cache ?? new UserCache($this->settings['maxma_cache_ttl']);
+    }
+    public function saveUserBonusesData(int $user_id, array $data, string $key): void
     {
-        $this->settings = $settings;
-        $this->cache_ttl = $settings['maxma_cache_ttl'] ?? 3600;
-        $this->maxmaClient = new MaxmaClient($settings);
+        if (!empty($data['balance'])) {
+            $this->user_repository->saveRewardPoints($user_id, $data['balance']);
+        }
+
+        $this->user_session->set($data, $key);
+        $this->user_cache->set($user_id, $data, $key);
     }
 
-    public function getUserBalance(int $user_id, array $user_data, $no_cache = false): array
+    public function getUserBonusesData(int $user_id, array $user_data, string $key): array
     {
-        $maxma_user_balance = [];
-        if (!$no_cache) {
-            $maxma_user_balance = db_get_row(
-                "SELECT balance, balance_updated_at FROM ?:maxma_user_cache WHERE user_id = ?i",
-                $user_id
+        $data = $this->user_session->get($key);
+
+        if (empty($data)) {
+            $data = $this->user_cache->get($user_id, $key);
+            if (!empty($data)) {
+                $this->user_session->set($data, $key);
+            } else {
+                $data = $this->fetchUserBonusesData($user_id, $user_data, $key);
+                $this->saveUserBonusesData($user_id, $data, $key);
+            }
+        }
+        return $data;
+    }
+
+    public function fetchUserBonusesData(int $user_id, array $user_data, string $key): array
+    {
+        try {
+            $phone = !empty($user_data['phone'])
+                ? $user_data['phone']
+                : $this->user_repository->getUserPhone($user_id);
+
+            $payload = new ClientDto(
+                $phone,
+                (string) $user_id
             );
 
-            if ($maxma_user_balance && $this->isCacheValid((int) $maxma_user_balance['balance_updated_at'])) {
-                $maxma_user_balance['balance'] = json_decode($maxma_user_balance['balance'], true);
-                return $maxma_user_balance['balance'];
-            }
-        }
+            $method = match ($key) {
+                self::BALANCE_CACHE_KEY => 'getBalance',
+                self::HISTORY_CACHE_KEY => 'getBonusHistory',
+                default => throw new \InvalidArgumentException("Unknown cache key $key"),
+            };
 
-        try {
-            $payload = [
-                'externalId' => $user_id,
-                'phoneNumber' => $user_data['phone'] ?? '',
-            ];
-
-            return $this->maxmaClient->getBalance($payload);
+            return $this->maxmaClient->$method($payload->toArray());
         } catch (ProcessingException $e) {
-            if ($maxma_user_balance && $maxma_user_balance['balance']) {
-                return json_decode($maxma_user_balance['balance'], true);
+            if ($e->getCode() === ProcessingException::ERR_CLIENT_NOT_FOUND) {
+                $request = (new ClientUpdateDto($user_id))::fromArray($user_id, $user_data);
+                $this->queue_repository->add(RequestTypes::NEW_CLIENT, $user_id, $request->toArray());
+                $this->saveUserBonusesData($user_id, [], $key);
             }
 
-            if (str_contains($e->getMessage(), 'Клиент не найден')) {
-                $request = self::prepareForUpdate($user_id, $user_data);
-                QueueService::add(RequestTypes::NEW_CLIENT, $user_id, $request);
-                self::saveUserBalance($user_id, []);
-            }
-
+            $this->logger->error('An error was appeared while processing user.', [
+                'user_data' => $user_data,
+                'exception' => $e->getHint()
+            ]);
             return [];
         }
-    }
-
-    public static function saveUserBalance(int $user_id, array $balance): void
-    {
-        if (!empty($balance)) {
-            fn_save_user_additional_data(POINTS, $balance['balance'], $user_id);
-
-            $change_points = [
-                'user_id' => $user_id,
-                'amount' => $balance['balance'],
-                'timestamp' => TIME,
-                'action' => '',
-                'reason' => 'Maxma Sync',
-            ];
-
-            db_query("REPLACE INTO ?:reward_point_changes ?e", $change_points);
-        }
-
-        db_replace_into('maxma_user_cache', [
-            'user_id' => $user_id,
-            'balance' => json_encode($balance, JSON_UNESCAPED_UNICODE),
-            'balance_updated_at' => TIME,
-        ]);
-    }
-
-    public function getUserHistory(int $user_id, array $user_data): array
-    {
-        $maxma_user_history = db_get_row(
-            "SELECT history, history_updated_at FROM ?:maxma_user_cache WHERE user_id = ?i",
-            $user_id
-        );
-
-        if ($maxma_user_history && $this->isCacheValid((int) $maxma_user_history['history_updated_at'])) {
-            $maxma_user_history['history'] = json_decode($maxma_user_history['history'], true);
-            return $maxma_user_history['history'];
-        }
-
-        try {
-            $payload = [
-                'externalId' => $user_id,
-                'phoneNumber' => $user_data['phone'] ?? '',
-            ];
-
-            return $this->maxmaClient->getBonusHistory($payload);
-        } catch (ProcessingException $e) {
-            if ($maxma_user_history && $maxma_user_history['history']) {
-                return json_decode($maxma_user_history['history'], true);
-            }
-
-            if (str_contains($e->getMessage(), 'Клиент не найден')) {
-                $request = self::prepareForUpdate($user_id, $user_data);
-                QueueService::add(RequestTypes::NEW_CLIENT, $user_id, $request);
-                self::saveUserHistory($user_id, []);
-            }
-
-            return [];
-        }
-    }
-
-    public static function saveUserHistory(int $user_id, array $history): void
-    {
-        db_replace_into('maxma_user_cache', [
-            'user_id' => $user_id,
-            'history' => json_encode($history, JSON_UNESCAPED_UNICODE),
-            'history_updated_at' => TIME,
-        ]);
-    }
-
-    private function isCacheValid(?int $updated_at): bool
-    {
-        return $updated_at && (TIME - $updated_at < $this->cache_ttl);
-    }
-
-    public static function prepareForUpdate(int $user_id, array $user_data): array
-    {
-        return [
-            'client' => [
-                'user_id' => $user_id,
-                'email' => $user_data['email'] ?? '',
-                'phoneNumber' => $user_data['phone'] ?? '',
-                'name' => $user_data['firstname'] ?? '',
-                'surname' => $user_data['lastname'] ?? ''
-            ]
-        ];
     }
 }

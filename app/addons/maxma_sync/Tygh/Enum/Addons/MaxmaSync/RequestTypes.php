@@ -22,4 +22,15 @@ class RequestTypes
     {
         return (new \ReflectionClass(self::class))->getConstants();
     }
+    public static function getQueueTypes(): array
+    {
+        return [
+            self::NEW_CLIENT,
+            self::SET_ORDER,
+            self::CONFIRM_ORDER,
+            self::CANCEL_ORDER,
+            self::APPLY_RETURN,
+            self::UPDATE_CLIENT,
+        ];
+    }
 }
