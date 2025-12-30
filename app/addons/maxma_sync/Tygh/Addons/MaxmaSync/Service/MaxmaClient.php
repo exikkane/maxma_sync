@@ -5,6 +5,7 @@ namespace Tygh\Addons\MaxmaSync\Service;
 use CloudLoyalty\Api\Client;
 use Tygh\Addons\MaxmaSync\Dto\BalanceDto;
 use Tygh\Addons\MaxmaSync\Dto\BonusHistoryDto;
+use Tygh\Addons\MaxmaSync\Helpers\FactoryBuilders\ApplyReturnRequestBuilder;
 use Tygh\Addons\MaxmaSync\Helpers\FactoryBuilders\CalculatePurchaseRequestBuilder;
 use Tygh\Addons\MaxmaSync\Helpers\FactoryBuilders\CancelOrderRequestBuilder;
 use Tygh\Addons\MaxmaSync\Helpers\FactoryBuilders\ConfirmOrderRequestBuilder;
@@ -13,7 +14,6 @@ use Tygh\Addons\MaxmaSync\Helpers\FactoryBuilders\GetHistoryRequestBuilder;
 use Tygh\Addons\MaxmaSync\Helpers\FactoryBuilders\NewClientRequestBuilder;
 use Tygh\Addons\MaxmaSync\Helpers\FactoryBuilders\SetOrderRequestBuilder;
 use Tygh\Addons\MaxmaSync\Helpers\FactoryBuilders\UpdateClientRequestBuilder;
-use Tygh\Addons\MaxmaSync\Helpers\MaxmaLogger;
 use Tygh\Addons\MaxmaSync\Helpers\RequestFactory;
 use Tygh\Enum\Addons\MaxmaSync\RequestTypes;
 
@@ -45,7 +45,7 @@ class MaxmaClient
             new SetOrderRequestBuilder(),
             new GetBalanceRequestBuilder(),
             new GetHistoryRequestBuilder(),
-
+            new ApplyReturnRequestBuilder(),
         ]);
     }
     /**

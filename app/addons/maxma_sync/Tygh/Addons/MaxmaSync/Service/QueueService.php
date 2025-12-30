@@ -10,6 +10,12 @@ use Tygh\Addons\MaxmaSync\Helpers\MaxmaLogger;
 
 class QueueService
 {
+    /**
+     * @param array $settings Настройки модуля
+     * @param MaxmaClient|null $client Клиент для работы с Maxma API
+     * @param QueueRepository $repository Репозиторий очереди
+     * @param MaxmaLogger $logger Логгер
+     */
     public function __construct(
         private readonly array $settings,
         private ?MaxmaClient   $client = null,
@@ -19,8 +25,11 @@ class QueueService
     {
         $this->client = $this->client ?? new MaxmaClient($this->settings);
     }
+
     /**
      * Обработка всей очереди
+     *
+     * @return void
      */
     public function processQueue(): void
     {
@@ -29,52 +38,77 @@ class QueueService
             return;
         }
         foreach ($items as $item) {
-            $this->processItem($item, $this->client, $this->logger);
+            $this->processItem($item);
         }
     }
 
     /**
      * Обработка одного элемента очереди
+     *
+     * @param array $item Элемент очереди
+     * @return void
      */
-    private function processItem(array $item, MaxmaClient $client, MaxmaLogger $logger): void
+    private function processItem(array $item): void
     {
         try {
+            // Ставим статус "обработка"
             $this->repository->updateStatus($item['id'], QueueStatuses::PROCESSING);
 
+            // Получаем тип запроса и payload
             $method  = $item['type'];
-            $payload = json_decode($item['payload'], true, 512, JSON_THROW_ON_ERROR);
+            $payload = json_decode($item['payload'], true);
 
+            // Проверка валидности типа запроса
             if (!RequestTypes::isValid($method)) {
-                $logger->error('An invalid request type was provided while processing a queue item.', [
+                $this->logger->error('An invalid request type was provided while processing a queue item.', [
                     'request' => $payload,
                 ]);
-
                 return;
             }
 
             try {
-                $client->$method($payload);
+                // Выполнение запроса через MaxmaClient
+                $this->client->$method($payload);
             } catch (ProcessingException $e) {
-                if (
-                    $method === RequestTypes::NEW_CLIENT
+                // Специальная обработка ошибки дублирующегося телефона для NEW_CLIENT
+                if ($method === RequestTypes::NEW_CLIENT
                     && $e->getCode() === ProcessingException::ERR_DUPLICATING_PHONE
                 ) {
-                    $client->updateClient($payload);
+                    $this->client->updateClient($payload);
                 }
+                throw $e;
             }
 
-            $this->repository->updateStatus($item['id'], QueueStatuses::ERROR);
+            // Обновляем статус как выполненный
+            $this->repository->updateStatus($item['id'], QueueStatuses::DONE);
         } catch (ProcessingException $e) {
+            // Обновляем статус как ошибка
             $this->repository->updateStatus(
                 $item['id'],
                 QueueStatuses::ERROR,
-                $e->getMessage()
             );
-
-            $logger->error('An error was appeared while processing a queue item.', [
-                'item' => $item,
-                'exception' => $e->getHint()
+            // Логируем подробности ошибки
+            $this->logger->error('Error processing queue item', [
+                'payload' => $item['payload'] ?? null,
+                'exception' => $e->__toString(),
+                'message' => $e->getMessage()
             ]);
+        }
+    }
+
+    /**
+     * Очистка всех обработанных элементов очереди
+     *
+     * @return void
+     */
+    public function clearProcessedQueue(): void
+    {
+        $items = $this->repository->getProcessed();
+        if (!$items) {
+            return;
+        }
+        foreach ($items as $item) {
+            $this->repository->deleteQueue($item);
         }
     }
 }

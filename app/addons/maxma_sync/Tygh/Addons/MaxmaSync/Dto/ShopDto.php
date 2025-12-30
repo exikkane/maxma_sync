@@ -5,10 +5,29 @@ namespace Tygh\Addons\MaxmaSync\Dto;
 final class ShopDto
 {
     public function __construct(
-        public string $code,
-        public string $name
+        private readonly string $code,
+        private readonly string $name
     ) {}
 
+    /**
+     * @return string
+     */
+    public function getCode(): string
+    {
+        return $this->code;
+    }
+
+    /**
+     * @return string
+     */
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    /**
+     * Сериализация в массив
+     */
     public function toArray(): array
     {
         return [

@@ -16,6 +16,17 @@ class UsersService
 {
     public const BALANCE_CACHE_KEY = 'balance';
     public const HISTORY_CACHE_KEY = 'history';
+
+    /**
+     * @param array $settings Настройки модуля
+     * @param array $session Сессия пользователя
+     * @param MaxmaClient|null $maxmaClient Клиент для работы с Maxma API
+     * @param QueueRepository $queue_repository Репозиторий очереди
+     * @param UserRepository $user_repository Репозиторий пользователей
+     * @param UserCache|null $user_cache Кеш пользователя
+     * @param UserSession|null $user_session Сессия пользователя
+     * @param MaxmaLogger $logger Логгер
+     */
     public function __construct(
         private readonly array           $settings,
         private array                    &$session = [],
@@ -30,6 +41,14 @@ class UsersService
         $this->user_session = $this->user_session ?? new UserSession($this->session);
         $this->user_cache = $this->user_cache ?? new UserCache($this->settings['maxma_cache_ttl']);
     }
+
+    /**
+     * Сохраняет данные бонусов пользователя в репозиторий, сессию и кеш
+     *
+     * @param int $user_id
+     * @param array $data
+     * @param string $key
+     */
     public function saveUserBonusesData(int $user_id, array $data, string $key): void
     {
         if (!empty($data['balance'])) {
@@ -40,6 +59,14 @@ class UsersService
         $this->user_cache->set($user_id, $data, $key);
     }
 
+    /**
+     * Получает данные бонусов пользователя из сессии, кеша или API
+     *
+     * @param int $user_id
+     * @param array $user_data
+     * @param string $key
+     * @return array
+     */
     public function getUserBonusesData(int $user_id, array $user_data, string $key): array
     {
         $data = $this->user_session->get($key);
@@ -56,6 +83,14 @@ class UsersService
         return $data;
     }
 
+    /**
+     * Запрашивает данные бонусов пользователя из Maxma API
+     *
+     * @param int $user_id
+     * @param array $user_data
+     * @param string $key
+     * @return array
+     */
     public function fetchUserBonusesData(int $user_id, array $user_data, string $key): array
     {
         try {
@@ -63,10 +98,7 @@ class UsersService
                 ? $user_data['phone']
                 : $this->user_repository->getUserPhone($user_id);
 
-            $payload = new ClientDto(
-                $phone,
-                (string) $user_id
-            );
+            $payload = new ClientDto($phone, (string) $user_id);
 
             $method = match ($key) {
                 self::BALANCE_CACHE_KEY => 'getBalance',
@@ -87,6 +119,40 @@ class UsersService
                 'exception' => $e->getHint()
             ]);
             return [];
+        }
+    }
+
+    /**
+     * Ставит нового клиента в очередь для добавления
+     *
+     * @param int $user_id
+     * @param array $user_data
+     */
+    public function queueNewClient(int $user_id, array $user_data): void
+    {
+        $client_update_dto = new ClientUpdateDto($user_id);
+        $request = $client_update_dto::fromArray($user_id, $user_data);
+        $this->queue_repository->add(RequestTypes::NEW_CLIENT, $user_id, $request->toArray());
+    }
+
+    /**
+     * Массовое обновление баланса и истории пользователей
+     *
+     * @param array $users_data
+     */
+    public function updateUserBalanceBulk(array $users_data): void
+    {
+        if (empty($users_data)) {
+            return;
+        }
+
+        $keys = [self::BALANCE_CACHE_KEY, self::HISTORY_CACHE_KEY];
+
+        foreach ($keys as $key) {
+            foreach ($users_data as $user_data) {
+                $data = $this->fetchUserBonusesData($user_data['user_id'], $user_data, $key);
+                $this->saveUserBonusesData($user_data['user_id'], $data, $key);
+            }
         }
     }
 }

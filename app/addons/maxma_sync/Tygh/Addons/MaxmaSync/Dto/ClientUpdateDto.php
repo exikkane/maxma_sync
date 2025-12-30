@@ -4,11 +4,11 @@ namespace Tygh\Addons\MaxmaSync\Dto;
 
 final class ClientUpdateDto
 {
-    public int $userId;
-    public string $email;
-    public string $phoneNumber;
-    public string $name;
-    public string $surname;
+    private int $userId;
+    private string $email;
+    private string $phoneNumber;
+    private string $name;
+    private string $surname;
 
     public function __construct(
         int $userId,
@@ -46,5 +46,30 @@ final class ClientUpdateDto
                 'surname'     => $this->surname,
             ],
         ];
+    }
+
+    public function getUserId(): int
+    {
+        return $this->userId;
+    }
+
+    public function getEmail(): string
+    {
+        return $this->email;
+    }
+
+    public function getPhoneNumber(): string
+    {
+        return $this->phoneNumber;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getSurname(): string
+    {
+        return $this->surname;
     }
 }

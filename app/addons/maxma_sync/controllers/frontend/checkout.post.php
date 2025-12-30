@@ -22,8 +22,6 @@ if (
 
     Tygh::$app['view']->assign('balance', $balance);
 }
-if (
-    $mode === 'delete_coupon'
-) {
+if ($mode === 'delete_coupon') {
     unset($cart['maxma_promotion_data']);
 }

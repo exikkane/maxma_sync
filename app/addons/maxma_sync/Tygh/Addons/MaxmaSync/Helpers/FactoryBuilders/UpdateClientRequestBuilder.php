@@ -3,6 +3,8 @@
 namespace Tygh\Addons\MaxmaSync\Helpers\FactoryBuilders;
 
 use CloudLoyalty\Api\Generated\Model;
+use Tygh\Addons\MaxmaSync\Dto\ClientDto;
+use Tygh\Addons\MaxmaSync\Dto\ClientUpdateDto;
 use Tygh\Addons\MaxmaSync\Interfaces\RequestBuilderInterface;
 use Tygh\Enum\Addons\MaxmaSync\RequestTypes;
 
@@ -18,19 +20,23 @@ final class UpdateClientRequestBuilder implements RequestBuilderInterface
         if (!isset($payload['client'])) {
             throw new \InvalidArgumentException('Payload for UPDATE_CLIENT must contain "client" key.');
         }
+        $client = new ClientDto(
+            $payload['phoneNumber'],
+            $payload['externalId'],
+        );
+        $clientUpdateDto = ClientUpdateDto::fromArray((int)($payload['client']['user_id'] ?? 0), $payload['client']);
 
-        $c = $payload['client'];
-        $clientObj = (new Model\ClientInfoQuery())
-            ->setEmail($c['email'] ?? '')
-            ->setPhoneNumber($c['phoneNumber'] ?? '')
-            ->setName($c['name'] ?? '')
-            ->setSurname($c['surname'] ?? '')
-            ->setFullName($c['name'] . ' ' . $c['surname'] ?? '')
-            ->setExternalId((string) $c['user_id'] ?? '');
+        $clientUpdateObj = (new Model\ClientInfoQuery())
+            ->setEmail($clientUpdateDto->getEmail())
+            ->setPhoneNumber($clientUpdateDto->getPhoneNumber())
+            ->setName($clientUpdateDto->getName())
+            ->setSurname($clientUpdateDto->getSurname())
+            ->setFullName(trim($clientUpdateDto->getName() . ' ' . $clientUpdateDto->getSurname()))
+            ->setExternalId((string) $clientUpdateDto->getUserId());
 
         return (new Model\UpdateClientRequest())
-            ->setPhoneNumber($c['phoneNumber'] ?? '')
-            ->setExternalId((string) $c['user_id'] ?? '')
-            ->setClient($clientObj);
+            ->setPhoneNumber($client->getPhoneNumber())
+            ->setExternalId($client->getExternalId())
+            ->setClient($clientUpdateObj);
     }
 }

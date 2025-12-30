@@ -3,6 +3,8 @@
 namespace Tygh\Addons\MaxmaSync\Helpers\FactoryBuilders;
 
 use CloudLoyalty\Api\Generated\Model;
+use Tygh\Addons\MaxmaSync\Dto\ClientUpdateDto;
+use Tygh\Addons\MaxmaSync\Dto\ShopDto;
 use Tygh\Addons\MaxmaSync\Interfaces\RequestBuilderInterface;
 use Tygh\Enum\Addons\MaxmaSync\RequestTypes;
 
@@ -19,18 +21,24 @@ final class NewClientRequestBuilder implements RequestBuilderInterface
             throw new \InvalidArgumentException('Payload for NEW_CLIENT must contain "client" key.');
         }
 
-        $c = $payload['client'];
+        $clientDto = ClientUpdateDto::fromArray((int)($payload['client']['user_id'] ?? 0), $payload['client']);
+
         $clientObj = (new Model\ClientInfoQuery())
-            ->setEmail($c['email'] ?? '')
-            ->setPhoneNumber($c['phoneNumber'] ?? '')
-            ->setName($c['name'] ?? '')
-            ->setSurname($c['surname'] ?? '')
-            ->setFullName($c['name'] . ' ' . $c['surname'] ?? '')
-            ->setExternalId((string) $c['user_id'] ?? '');
+            ->setEmail($clientDto->getEmail())
+            ->setPhoneNumber($clientDto->getPhoneNumber())
+            ->setName($clientDto->getName())
+            ->setSurname($clientDto->getSurname())
+            ->setFullName(trim($clientDto->getName() . ' ' . $clientDto->getSurname()))
+            ->setExternalId((string) $clientDto->getUserId());
+
+        $shop = new ShopDto(
+            $payload['calculationQuery']['shop']['code'],
+            $payload['calculationQuery']['shop']['name']
+        );
 
         $shopObj = (new Model\ShopQuery())
-            ->setCode($payload['calculationQuery']['shop']['code'] ?? 'CS-Cart')
-            ->setName($payload['calculationQuery']['shop']['name'] ?? 'CS-Cart');
+            ->setCode($shop->getCode())
+            ->setName($shop->getName());
 
         return (new Model\NewClientRequest())
             ->setClient($clientObj)

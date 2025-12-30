@@ -11,9 +11,17 @@
     <description>Интеграция с сервисом Maxma</description>
     <language_variables>
         <item id="maxma" lang="ru">Maxma</item>
+        <item id="maxma_sync.balance_updated" lang="ru">Баланс баллов пользователей был успешно обновлен</item>
+        <item id="'maxma_sync.queue_synced" lang="ru">Очередь была успешно обработана</item>
         <item id="maxma_sync.process_queue" lang="ru"> Для обработки очереди запросов нажмите -
             &lt;a class="cm-ajax cm-comet btn btn-primary" href="[process_queue_url]"&gt;
             Обработать очередь сейчас
+            &lt;/a&gt;
+            &lt;br /&gt;&lt;br /&gt;
+        </item>
+        <item id="maxma_sync.update_balances" lang="ru"> Для обновления баланса бонусных баллов пользователей нажмите -
+            &lt;a class="cm-ajax cm-comet btn btn-primary" href="[update_balances_url]"&gt;
+            Обновить баланс пользователей
             &lt;/a&gt;
             &lt;br /&gt;&lt;br /&gt;
         </item>
@@ -30,6 +38,10 @@
                     <item id="sync_queue">
                         <type>info</type>
                         <handler>fn_maxma_sync_queue</handler>
+                    </item>
+                    <item id="update_balances">
+                        <type>info</type>
+                        <handler>fn_maxma_sync_update_balances</handler>
                     </item>
                     <item id="api_key">
                         <type>input</type>
@@ -66,7 +78,7 @@
                     </item>
                     <item id="maxma_return_statuses">
                         <type>input</type>
-                        <default_value>F</default_value>
+                        <default_value>E</default_value>
                         <name>Статусы заказа для возврата заказов в Maxma</name>
                     </item>
                 </items>

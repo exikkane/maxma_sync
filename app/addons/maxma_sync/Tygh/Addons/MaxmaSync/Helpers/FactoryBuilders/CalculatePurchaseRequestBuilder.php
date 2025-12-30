@@ -3,6 +3,9 @@
 namespace Tygh\Addons\MaxmaSync\Helpers\FactoryBuilders;
 
 use CloudLoyalty\Api\Generated\Model;
+use Tygh\Addons\MaxmaSync\Dto\ClientDto;
+use Tygh\Addons\MaxmaSync\Dto\ProductDto;
+use Tygh\Addons\MaxmaSync\Dto\ShopDto;
 use Tygh\Addons\MaxmaSync\Interfaces\RequestBuilderInterface;
 use Tygh\Enum\Addons\MaxmaSync\RequestTypes;
 
@@ -22,24 +25,44 @@ final class CalculatePurchaseRequestBuilder implements RequestBuilderInterface
 
         $request = new Model\V2CalculatePurchaseRequest();
 
+        $client = new ClientDto(
+            $calc_query['client']['phoneNumber'],
+            $calc_query['client']['externalId']
+        );
+
         $clientObj = (new Model\ClientQuery())
-            ->setPhoneNumber($calc_query['client']['phoneNumber'] ?? '')
-            ->setExternalId((string)$calc_query['client']['externalId'] ?? '');
+            ->setPhoneNumber($client->getPhoneNumber())
+            ->setExternalId($client->getExternalId());
+
+        $shop = new ShopDto(
+            $calc_query['shop']['code'],
+            $calc_query['shop']['name']
+        );
 
         $shopObj = (new Model\ShopQuery())
-            ->setCode($calc_query['shop']['code'] ?? 'CS-Cart')
-            ->setName($calc_query['shop']['name'] ?? 'CS-Cart');
+            ->setCode($shop->getCode())
+            ->setName($shop->getName());
+
         $rows = [];
 
         foreach ($calc_query['rows'] as $item) {
-            $product = $item['product'];
+
+            $product = new ProductDto(
+                $item['product']['externalId'],
+                $item['product']['sku'],
+                $item['product']['title'],
+                (float) $item['product']['buyingPrice'],
+                (float) $item['product']['blackPrice'],
+                (float) $item['product']['redPrice']
+            );
+
             $productObj = (new Model\Product())
-                ->setExternalId((string)$product['externalId'])
-                ->setSku((string)$product['sku'])
-                ->setTitle((string)$product['title'])
-                ->setBuyingPrice((float)($product['buyingPrice'] ?? 0))
-                ->setBlackPrice((float)($product['blackPrice'] ?? 0))
-                ->setRedPrice((float)($product['redPrice'] ?? 0));
+                ->setExternalId($product->getExternalId())
+                ->setSku($product->getSku())
+                ->setTitle($product->getTitle())
+                ->setBuyingPrice($product->getBuyingPrice())
+                ->setBlackPrice($product->getBlackPrice())
+                ->setRedPrice($product->getRedPrice());
 
             $row = (new Model\CalculationQueryRow())
                 ->setId((string)$item['id'])

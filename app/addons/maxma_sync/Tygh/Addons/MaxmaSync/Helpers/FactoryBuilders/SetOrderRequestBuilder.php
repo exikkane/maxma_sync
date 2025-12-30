@@ -22,9 +22,13 @@ final class SetOrderRequestBuilder implements RequestBuilderInterface
 
         $request = new Model\V2SetOrderRequest();
 
-        $clientObj = (new Model\ClientQuery())
-            ->setPhoneNumber($calc_query['client']['phoneNumber'] ?? '')
-            ->setExternalId((string)$calc_query['client']['externalId'] ?? '');
+        if (!empty($calc_query['client']['phoneNumber'])) {
+            $clientObj = (new Model\ClientQuery())
+                ->setPhoneNumber((string)$calc_query['client']['phoneNumber']);
+        } elseif (!empty($calc_query['client']['externalId'])) {
+            $clientObj = (new Model\ClientQuery())
+                ->setExternalId($calc_query['client']['externalId']);
+        }
 
         $shopObj = (new Model\ShopQuery())
             ->setCode($calc_query['shop']['code'] ?? 'CS-Cart')

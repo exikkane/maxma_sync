@@ -31,12 +31,12 @@ final class RequestFactory
 
         foreach ($this->builders as $builder) {
             if ($builder->supports($method)) {
-                $response = $builder->build($payload);
+                $request = $builder->build($payload);
                 if ($use_cache) {
-                    self::$called_payloads[$method][$payload_hash] = $response;
+                    self::$called_payloads[$method][$payload_hash] = $request;
                 }
 
-                return $response;
+                return $request;
             }
         }
         $this->logger->error("Unknown MAXMA method: {$method}");
