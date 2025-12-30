@@ -18,13 +18,11 @@ final class GetBalanceRequestBuilder implements RequestBuilderInterface
     {
         $client = new ClientDto(
             $payload['phoneNumber'],
-            $payload['externalId'],
         );
         if (empty($client->getPhoneNumber())) {
             throw new \InvalidArgumentException('Payload for GET_BALANCE must contain "phoneNumber" key.');
         }
         return (new Model\ClientQuery())
-            ->setPhoneNumber($client->getPhoneNumber())
-            ->setExternalId($client->getExternalId());
+            ->setPhoneNumber($client->getPhoneNumber());
     }
 }

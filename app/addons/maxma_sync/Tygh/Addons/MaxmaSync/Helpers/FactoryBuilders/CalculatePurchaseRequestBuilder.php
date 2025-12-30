@@ -27,12 +27,10 @@ final class CalculatePurchaseRequestBuilder implements RequestBuilderInterface
 
         $client = new ClientDto(
             $calc_query['client']['phoneNumber'],
-            $calc_query['client']['externalId']
         );
 
         $clientObj = (new Model\ClientQuery())
-            ->setPhoneNumber($client->getPhoneNumber())
-            ->setExternalId($client->getExternalId());
+            ->setPhoneNumber($client->getPhoneNumber());
 
         $shop = new ShopDto(
             $calc_query['shop']['code'],
@@ -51,18 +49,19 @@ final class CalculatePurchaseRequestBuilder implements RequestBuilderInterface
                 $item['product']['externalId'],
                 $item['product']['sku'],
                 $item['product']['title'],
-                (float) $item['product']['buyingPrice'],
                 (float) $item['product']['blackPrice'],
-                (float) $item['product']['redPrice']
+                $item['product']['redPrice'] ?? 0
             );
 
             $productObj = (new Model\Product())
                 ->setExternalId($product->getExternalId())
                 ->setSku($product->getSku())
                 ->setTitle($product->getTitle())
-                ->setBuyingPrice($product->getBuyingPrice())
-                ->setBlackPrice($product->getBlackPrice())
-                ->setRedPrice($product->getRedPrice());
+                ->setBlackPrice($product->getBlackPrice());
+
+            if ($product->getRedPrice() != 0) {
+                $productObj->setRedPrice($product->getRedPrice());
+            }
 
             $row = (new Model\CalculationQueryRow())
                 ->setId((string)$item['id'])

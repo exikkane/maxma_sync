@@ -20,23 +20,29 @@ final class UpdateClientRequestBuilder implements RequestBuilderInterface
         if (!isset($payload['client'])) {
             throw new \InvalidArgumentException('Payload for UPDATE_CLIENT must contain "client" key.');
         }
+
         $client = new ClientDto(
-            $payload['phoneNumber'],
-            $payload['externalId'],
+            $payload['client']['phoneNumber'],
         );
-        $clientUpdateDto = ClientUpdateDto::fromArray((int)($payload['client']['user_id'] ?? 0), $payload['client']);
+        $clientUpdateDto = new ClientUpdateDto(
+            $payload['client']['user_id'],
+            $payload['client']['email'],
+            $payload['client']['phoneNumber'],
+            $payload['client']['name'],
+            $payload['client']['surname'],
+            $payload['shop']['code'],
+            $payload['shop']['name'],
+        );
 
         $clientUpdateObj = (new Model\ClientInfoQuery())
             ->setEmail($clientUpdateDto->getEmail())
             ->setPhoneNumber($clientUpdateDto->getPhoneNumber())
             ->setName($clientUpdateDto->getName())
             ->setSurname($clientUpdateDto->getSurname())
-            ->setFullName(trim($clientUpdateDto->getName() . ' ' . $clientUpdateDto->getSurname()))
-            ->setExternalId((string) $clientUpdateDto->getUserId());
+            ->setFullName(trim($clientUpdateDto->getName() . ' ' . $clientUpdateDto->getSurname()));
 
         return (new Model\UpdateClientRequest())
             ->setPhoneNumber($client->getPhoneNumber())
-            ->setExternalId($client->getExternalId())
             ->setClient($clientUpdateObj);
     }
 }

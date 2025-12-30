@@ -17,15 +17,13 @@ final class GetHistoryRequestBuilder implements RequestBuilderInterface
     public function build(array $payload): Model\GetBonusHistoryRequest
     {
         $client = new ClientDto(
-            $payload['phoneNumber'],
-            $payload['externalId'],
+            $payload['phoneNumber']
         );
         if (empty($client->getPhoneNumber())) {
             throw new \InvalidArgumentException('Payload for GET_BONUS_HISTORY must contain "phoneNumber" key.');
         }
         $clientObj = (new Model\ClientQuery())
-            ->setPhoneNumber($client->getPhoneNumber())
-            ->setExternalId($client->getExternalId());
+            ->setPhoneNumber($client->getPhoneNumber());
 
         return (new Model\GetBonusHistoryRequest())
             ->setClient($clientObj);

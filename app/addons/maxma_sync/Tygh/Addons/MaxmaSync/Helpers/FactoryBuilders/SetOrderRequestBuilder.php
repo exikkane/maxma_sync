@@ -25,9 +25,6 @@ final class SetOrderRequestBuilder implements RequestBuilderInterface
         if (!empty($calc_query['client']['phoneNumber'])) {
             $clientObj = (new Model\ClientQuery())
                 ->setPhoneNumber((string)$calc_query['client']['phoneNumber']);
-        } elseif (!empty($calc_query['client']['externalId'])) {
-            $clientObj = (new Model\ClientQuery())
-                ->setExternalId($calc_query['client']['externalId']);
         }
 
         $shopObj = (new Model\ShopQuery())
@@ -42,7 +39,6 @@ final class SetOrderRequestBuilder implements RequestBuilderInterface
                 ->setExternalId((string)$product['externalId'])
                 ->setSku((string)$product['sku'])
                 ->setTitle((string)$product['title'])
-                ->setBuyingPrice((float)($product['buyingPrice'] ?? 0))
                 ->setBlackPrice((float)($product['blackPrice'] ?? 0))
                 ->setRedPrice((float)($product['redPrice'] ?? 0));
 

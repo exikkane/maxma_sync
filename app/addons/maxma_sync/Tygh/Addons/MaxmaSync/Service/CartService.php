@@ -41,7 +41,7 @@ class CartService
      */
     public function calculateCartContent(array $cart, array $auth, string $promotion_code = ''): V2CalculatePurchaseResponse|array
     {
-        $calculationQuery = $this->generatecalculationQuery($cart, $auth, $promotion_code);
+        $calculationQuery = $this->generatecalculationQuery($cart, $promotion_code);
         $payload = [
             'calculationQuery' => $calculationQuery,
         ];
@@ -63,15 +63,13 @@ class CartService
      * Генерирует массив запроса CalculationQueryDto для Maxma
      *
      * @param array $cart Данные корзины
-     * @param array $auth Данные авторизации пользователя
      * @param string $promotion_code Промокод (опционально)
      * @return array
      */
-    public function generateCalculationQuery(array $cart, array $auth, string $promotion_code = ''): array
+    public function generateCalculationQuery(array $cart, string $promotion_code = ''): array
     {
         $client = new ClientDto(
-            $cart['user_data']['phone'] ?? $this->default_phone,
-            (string) $auth['user_id']
+            $cart['user_data']['phone'] ?? $this->default_phone
         );
         $shop = new ShopDto(
             $this->settings['maxma_shop_code'],
@@ -94,9 +92,9 @@ class CartService
                     $externalId,
                     $sku,
                     $title,
-                    (float) ($product['list_price'] ?? 0),
                     $blackPrice,
-                    $redPrice
+                    $redPrice,
+                    (float) ($product['list_price'] ?? 0),
                 )
             );
         }

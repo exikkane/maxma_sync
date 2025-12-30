@@ -20,7 +20,14 @@ use Tygh\Enum\Addons\Rma\ReturnOperationStatuses;
 function fn_maxma_sync_update_profile($action, $user_data)
 {
     $user_id = $user_data['user_id'];
-    $request = ClientUpdateDto::fromArray($user_id, $user_data);
+    $settings = Registry::get('addons.maxma_sync');
+
+    $shop = [
+        'shopCode' => $settings['maxma_shop_code'] ?? '',
+        'shopName' => $settings['maxma_shop_name'] ?? '',
+    ];
+
+    $request = ClientUpdateDto::fromArray($user_id, $user_data, $shop);
 
     $request_type = $action === 'add'
         ? RequestTypes::NEW_CLIENT
@@ -40,7 +47,7 @@ function fn_maxma_sync_update_profile($action, $user_data)
  * @param int $order_id ID текущего заказа
  * @return void
  */
-function fn_maxma_sync_place_order_post(array $cart, array $auth, string $action, int $issuer_id, int $parent_order_id, int $order_id): void
+function fn_maxma_sync_place_order_post(array $cart, array $auth, string $action, $issuer_id, int $parent_order_id, int $order_id): void
 {
     $settings = Registry::get('addons.maxma_sync');
     $cart_service = new CartService($settings);
@@ -58,7 +65,7 @@ function fn_maxma_sync_place_order_post(array $cart, array $auth, string $action
 
     $payload = [
         'orderId' => (string)$order_id,
-        'calculationQuery' => $cart_service->generatecalculationQuery($cart, $auth, $promo_code),
+        'calculationQuery' => $cart_service->generatecalculationQuery($cart, $promo_code),
     ];
     (new QueueRepository())->add(RequestTypes::SET_ORDER, $order_id, $payload);
 
@@ -174,8 +181,8 @@ function fn_maxma_sync_change_order_status_post(int $order_id, string $status_to
         $data = [
             'id'           => $return['return_id'],
             'executedAt'   => $return['timestamp'],
-            'shopCode'     => $settings['shop_code'],
-            'shopName'     => $settings['shop_name'],
+            'shopCode'     => $settings['maxma_shop_code'],
+            'shopName'     => $settings['maxma_shop_name'],
             'purchaseId'   => $order_id,
             'items'        => $items,
             'refundAmount' => $refund,

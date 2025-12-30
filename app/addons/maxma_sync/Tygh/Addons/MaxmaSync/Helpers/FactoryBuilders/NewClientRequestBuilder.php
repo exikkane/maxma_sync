@@ -21,19 +21,26 @@ final class NewClientRequestBuilder implements RequestBuilderInterface
             throw new \InvalidArgumentException('Payload for NEW_CLIENT must contain "client" key.');
         }
 
-        $clientDto = ClientUpdateDto::fromArray((int)($payload['client']['user_id'] ?? 0), $payload['client']);
+        $clientUpdateDto = new ClientUpdateDto(
+            $payload['client']['user_id'],
+            $payload['client']['email'],
+            $payload['client']['phoneNumber'],
+            $payload['client']['name'],
+            $payload['client']['surname'],
+            $payload['shop']['code'],
+            $payload['shop']['name'],
+        );
 
         $clientObj = (new Model\ClientInfoQuery())
-            ->setEmail($clientDto->getEmail())
-            ->setPhoneNumber($clientDto->getPhoneNumber())
-            ->setName($clientDto->getName())
-            ->setSurname($clientDto->getSurname())
-            ->setFullName(trim($clientDto->getName() . ' ' . $clientDto->getSurname()))
-            ->setExternalId((string) $clientDto->getUserId());
+            ->setEmail($clientUpdateDto->getEmail())
+            ->setPhoneNumber($clientUpdateDto->getPhoneNumber())
+            ->setName($clientUpdateDto->getName())
+            ->setSurname($clientUpdateDto->getSurname())
+            ->setFullName(trim($clientUpdateDto->getName() . ' ' . $clientUpdateDto->getSurname()));
 
         $shop = new ShopDto(
-            $payload['calculationQuery']['shop']['code'],
-            $payload['calculationQuery']['shop']['name']
+            $clientUpdateDto->getShopCode(),
+            $clientUpdateDto->getShopName(),
         );
 
         $shopObj = (new Model\ShopQuery())

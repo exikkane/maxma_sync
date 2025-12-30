@@ -6,7 +6,7 @@ final class ClientDto
 {
     public function __construct(
         private readonly string $phoneNumber,
-        private readonly string $externalId
+        private readonly string $externalId = ''
     ) {}
 
     /**
@@ -30,9 +30,14 @@ final class ClientDto
      */
     public function toArray(): array
     {
-        return [
-            'phoneNumber' => $this->phoneNumber,
-            'externalId'  => $this->externalId,
+        $result = [
+            'phoneNumber' => $this->phoneNumber
         ];
+
+        if ($this->externalId !== '') {
+            $result['externalId'] = $this->externalId;
+        }
+
+        return $result;
     }
 }

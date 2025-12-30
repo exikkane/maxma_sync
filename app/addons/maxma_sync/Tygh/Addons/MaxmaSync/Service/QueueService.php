@@ -51,10 +51,8 @@ class QueueService
     private function processItem(array $item): void
     {
         try {
-            // Ставим статус "обработка"
             $this->repository->updateStatus($item['id'], QueueStatuses::PROCESSING);
 
-            // Получаем тип запроса и payload
             $method  = $item['type'];
             $payload = json_decode($item['payload'], true);
 
@@ -67,10 +65,8 @@ class QueueService
             }
 
             try {
-                // Выполнение запроса через MaxmaClient
                 $this->client->$method($payload);
             } catch (ProcessingException $e) {
-                // Специальная обработка ошибки дублирующегося телефона для NEW_CLIENT
                 if ($method === RequestTypes::NEW_CLIENT
                     && $e->getCode() === ProcessingException::ERR_DUPLICATING_PHONE
                 ) {

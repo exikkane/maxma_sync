@@ -8,7 +8,6 @@ final class ProductDto
         private readonly string $externalId,
         private readonly string $sku,
         private readonly string $title,
-        private readonly float $buyingPrice,
         private readonly float $blackPrice,
         private readonly float $redPrice
     ) {}
@@ -40,14 +39,6 @@ final class ProductDto
     /**
      * @return float
      */
-    public function getBuyingPrice(): float
-    {
-        return $this->buyingPrice;
-    }
-
-    /**
-     * @return float
-     */
     public function getBlackPrice(): float
     {
         return $this->blackPrice;
@@ -66,13 +57,16 @@ final class ProductDto
      */
     public function toArray(): array
     {
-        return [
+        $result = [
             'externalId'  => $this->externalId,
             'sku'         => $this->sku,
             'title'       => $this->title,
-            'buyingPrice' => $this->buyingPrice,
             'blackPrice'  => $this->blackPrice,
-            'redPrice'    => $this->redPrice,
         ];
+
+        if (!empty($this->redPrice)) {
+            $result['redPrice'] = $this->redPrice;
+        }
+        return $result;
     }
 }
