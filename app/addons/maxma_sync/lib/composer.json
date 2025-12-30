@@ -1,0 +1,12 @@
+{
+  "autoload": {
+    "psr-4": {
+      "Tygh\\Addons\\MaxmaSync\\": "../src/"
+    }
+  },
+  "require": {
+    "cloudloyalty/client-php": "^1.9"
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}

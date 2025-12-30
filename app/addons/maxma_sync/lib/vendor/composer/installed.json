@@ -1,0 +1,61 @@
+{
+    "packages": [
+        {
+            "name": "cloudloyalty/client-php",
+            "version": "v1.9.2",
+            "version_normalized": "1.9.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/cloudloyalty/client-php.git",
+                "reference": "abb7db6ed0311d67bd38df858c90129cf4e65c5f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/cloudloyalty/client-php/zipball/abb7db6ed0311d67bd38df858c90129cf4e65c5f",
+                "reference": "abb7db6ed0311d67bd38df858c90129cf4e65c5f",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "php": ">= 5.4"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^2.16",
+                "guzzlehttp/guzzle": "^7.4",
+                "guzzlehttp/psr7": "^2.2",
+                "jane-php/open-api-3": "^7.2",
+                "phpunit/phpunit": "^9.5",
+                "psr/log": "^1.1",
+                "symfony/translation-contracts": "^2.5"
+            },
+            "time": "2025-11-20T12:49:00+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Tests\\": "tests/",
+                    "Tools\\": "tools/",
+                    "CloudLoyalty\\Api\\": "lib/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Dev Team",
+                    "email": "support@maxma.com"
+                }
+            ],
+            "description": "PHP SDK for MAXMA API",
+            "support": {
+                "issues": "https://github.com/cloudloyalty/client-php/issues",
+                "source": "https://github.com/cloudloyalty/client-php/tree/v1.9.2"
+            },
+            "install-path": "../cloudloyalty/client-php"
+        }
+    ],
+    "dev": false,
+    "dev-package-names": []
+}

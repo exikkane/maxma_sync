@@ -1,0 +1,32 @@
+{
+    "name": "cloudloyalty/client-php",
+    "description": "PHP SDK for MAXMA API",
+    "type": "library",
+    "require": {
+        "php": ">= 5.4",
+        "ext-json": "*"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^2.16",
+        "phpunit/phpunit": "^9.5",
+        "jane-php/open-api-3": "^7.2",
+        "guzzlehttp/guzzle": "^7.4",
+        "symfony/translation-contracts": "^2.5",
+        "psr/log": "^1.1",
+        "guzzlehttp/psr7": "^2.2"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Dev Team",
+            "email": "support@maxma.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "CloudLoyalty\\Api\\": "lib/",
+            "Tools\\": "tools/",
+            "Tests\\": "tests/"
+        }
+    }
+}
