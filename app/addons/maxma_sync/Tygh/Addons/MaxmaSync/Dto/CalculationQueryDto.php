@@ -4,17 +4,31 @@ namespace Tygh\Addons\MaxmaSync\Dto;
 
 final class CalculationQueryDto
 {
+    private ClientDto $client;
+    private ShopDto $shop;
+    private string $promocode;
+    private int $applyBonuses;
+    private int $collectBonuses;
+    private array $rows;
     /**
      * @param RowDto[] $rows
      */
     public function __construct(
-        public ClientDto $client,
-        public ShopDto $shop,
-        public string $promocode,
-        public int $applyBonuses,
-        public int $collectBonuses,
-        public array $rows
-    ) {}
+        ClientDto $client,
+        ShopDto $shop,
+        string $promocode,
+        int $applyBonuses,
+        int $collectBonuses,
+        array $rows
+    ) {
+        $this->client = $client;
+        $this->shop = $shop;
+        $this->promocode = $promocode;
+        $this->applyBonuses = $applyBonuses;
+        $this->collectBonuses = $collectBonuses;
+        $this->rows = $rows;
+    }
+
 
     public function toArray(): array
     {

@@ -4,10 +4,16 @@ namespace Tygh\Addons\MaxmaSync\Dto;
 
 final class ClientDto
 {
+    private string $phoneNumber;
+    private string $externalId;
     public function __construct(
-        private readonly string $phoneNumber,
-        private readonly string $externalId = ''
-    ) {}
+        string $phoneNumber,
+        string $externalId = ''
+    ) {
+        $this->phoneNumber = $phoneNumber;
+        $this->externalId = $externalId;
+    }
+
 
     /**
      * @return string

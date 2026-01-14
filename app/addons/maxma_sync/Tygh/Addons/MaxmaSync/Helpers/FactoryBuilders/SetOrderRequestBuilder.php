@@ -39,8 +39,11 @@ final class SetOrderRequestBuilder implements RequestBuilderInterface
                 ->setExternalId((string)$product['externalId'])
                 ->setSku((string)$product['sku'])
                 ->setTitle((string)$product['title'])
-                ->setBlackPrice((float)($product['blackPrice'] ?? 0))
-                ->setRedPrice((float)($product['redPrice'] ?? 0));
+                ->setBlackPrice((float)($product['blackPrice'] ?? 0));
+
+            if ($product['redPrice']) {
+                $productObj->setRedPrice((float)$product['redPrice']);
+            }
 
             $row = (new Model\CalculationQueryRow())
                 ->setId((string)$item['id'])

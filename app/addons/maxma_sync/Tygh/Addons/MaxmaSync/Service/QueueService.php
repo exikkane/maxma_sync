@@ -16,14 +16,19 @@ class QueueService
      * @param QueueRepository $repository Репозиторий очереди
      * @param MaxmaLogger $logger Логгер
      */
+    private ?MaxmaClient $client;
+    private QueueRepository $repository;
+    private MaxmaLogger $logger;
+
     public function __construct(
-        private readonly array $settings,
-        private ?MaxmaClient   $client = null,
-        private readonly QueueRepository $repository = new QueueRepository(),
-        private readonly MaxmaLogger $logger = new MaxmaLogger()
-    )
-    {
-        $this->client = $this->client ?? new MaxmaClient($this->settings);
+        array $settings,
+        ?MaxmaClient $client = null,
+        ?QueueRepository $repository = null,
+        ?MaxmaLogger $logger = null
+    ) {
+        $this->client = $client ?? new MaxmaClient($settings);
+        $this->repository = $repository ?? new QueueRepository();
+        $this->logger = $logger ?? new MaxmaLogger();
     }
 
     /**
@@ -34,11 +39,20 @@ class QueueService
     public function processQueue(): void
     {
         $items = $this->repository->getPending();
-        if (!$items) {
-            return;
-        }
+        if (!$items) return;
+
+        $hasErrors = false;
+
         foreach ($items as $item) {
-            $this->processItem($item);
+            try {
+                $this->processItem($item);
+            } catch (ProcessingException $e) {
+                $hasErrors = true;
+            }
+        }
+
+        if ($hasErrors) {
+            throw new \Exception("Некоторые элементы очереди не были обработаны.");
         }
     }
 

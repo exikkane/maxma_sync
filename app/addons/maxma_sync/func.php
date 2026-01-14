@@ -265,8 +265,11 @@ function fn_maxma_sync_calculate_cart_content_before_shipping_calculation(array 
 
         if ($new_calculation) {
             $session = &Tygh::$app['session'];
-            $cart_service->handleCalculationResult($new_calculation, $cart, $session);
-            $new_calculation = is_array($new_calculation) ? $new_calculation : $cart_service->calculationToArray($new_calculation);
+
+            if (!is_array($new_calculation)) {
+                $cart_service->handleCalculationResult($new_calculation, $cart, $session);
+                $new_calculation = $cart_service->calculationToArray($new_calculation);
+            }
 
             if (!empty($new_calculation['total_discount']) && !empty($cart['maxma_promotion_data']['total_discount'])) {
                 $cart['has_coupons'] = true;
@@ -293,7 +296,6 @@ function fn_maxma_sync_pre_promotion_check_coupon(string $pending_coupon, array 
     $cart['maxma_promotion_data'] = $cart_service->calculationToArray($new_calculation);
 
     if (!empty($cart['maxma_promotion_data']['total_discount'])) {
-        $cart['pending_coupon'] = false;
         $cart['maxma_promotion_data']['coupon'] = $pending_coupon;
     }
 }

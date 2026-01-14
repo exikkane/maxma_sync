@@ -21,14 +21,21 @@ class CartService
      * @param MaxmaClient|null $maxmaClient Клиент для работы с Maxma API
      * @param MaxmaLogger $logger Логгер
      */
+    private array $settings;
+    private ?UsersService $usersService;
+    private ?MaxmaClient $maxmaClient;
+    private MaxmaLogger $logger;
+
     public function __construct(
-        private readonly array $settings,
-        private ?UsersService $usersService = null,
-        private ?MaxmaClient   $maxmaClient = null,
-        private readonly MaxmaLogger $logger = new MaxmaLogger()
+        array $settings,
+        ?UsersService $usersService = null,
+        ?MaxmaClient $maxmaClient = null,
+        ?MaxmaLogger $logger = null
     ) {
-        $this->maxmaClient = $this->maxmaClient ?? new MaxmaClient($this->settings);
-        $this->usersService = $this->usersService ?? new UsersService($this->settings);
+        $this->settings = $settings;
+        $this->usersService = $usersService ?? new UsersService($this->settings);
+        $this->maxmaClient = $maxmaClient ?? new MaxmaClient($this->settings);
+        $this->logger = $logger ?? new MaxmaLogger();
     }
 
     /**
@@ -39,7 +46,7 @@ class CartService
      * @param string $promotion_code Промокод (опционально)
      * @return V2CalculatePurchaseResponse|array
      */
-    public function calculateCartContent(array $cart, array $auth, string $promotion_code = ''): V2CalculatePurchaseResponse|array
+    public function calculateCartContent(array $cart, array $auth, string $promotion_code = '')
     {
         $calculationQuery = $this->generatecalculationQuery($cart, $promotion_code);
         $payload = [
@@ -149,12 +156,13 @@ class CartService
 
         $rows = [];
         foreach ($result->getRows() as $row) {
+            $discounts = $row->getDiscounts();
             $rows[$row->getId()] = [
                 'total_discount' => (int) $row->getTotalDiscount(),
                 'discounts' => [
-                    'auto' => $row->getDiscounts()?->getAuto() ?? 0,
-                    'manual' => $row->getDiscounts()?->getManual() ?? 0,
-                    'bonuses' => $row->getDiscounts()?->getBonuses() ?? 0,
+                    'auto'    => $discounts ? $discounts->getAuto() : 0,
+                    'manual'  => $discounts ? $discounts->getManual() : 0,
+                    'bonuses' => $discounts ? $discounts->getBonuses() : 0,
                 ],
             ];
         }

@@ -26,7 +26,6 @@
             &lt;br /&gt;&lt;br /&gt;
         </item>
     </language_variables>
-
     <settings edition_type="ROOT">
         <sections>
             <section id="general">
@@ -86,6 +85,8 @@
         </sections>
     </settings>
     <queries>
+        <item>DROP TABLE IF EXISTS ?:maxma_user_cache;</item>
+        <item>DROP TABLE IF EXISTS ?:maxma_queue;</item>
         <item for="install">
             CREATE TABLE ?:maxma_queue (
             id mediumint(8) unsigned NOT NULL auto_increment,
@@ -97,7 +98,7 @@
             updated_at int(11) unsigned NOT NULL DEFAULT '0',
             PRIMARY KEY (id),
             INDEX idx_status (status),
-            INDEX idx_type_entity (type, entity_id)
+            UNIQUE idx_type_entity (type, entity_id)
             ) ENGINE=MyISAM DEFAULT CHARSET UTF8;
         </item>
         <item for="install">

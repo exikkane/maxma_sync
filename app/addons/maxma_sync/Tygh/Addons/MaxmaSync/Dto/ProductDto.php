@@ -4,13 +4,25 @@ namespace Tygh\Addons\MaxmaSync\Dto;
 
 final class ProductDto
 {
+    private string $externalId;
+    private string $sku;
+    private string $title;
+    private float $blackPrice;
+    private float $redPrice;
     public function __construct(
-        private readonly string $externalId,
-        private readonly string $sku,
-        private readonly string $title,
-        private readonly float $blackPrice,
-        private readonly float $redPrice
-    ) {}
+        string $externalId,
+        string $sku,
+        string $title,
+        float $blackPrice,
+        float $redPrice
+    ) {
+        $this->externalId = $externalId;
+        $this->sku = $sku;
+        $this->title = $title;
+        $this->blackPrice = $blackPrice;
+        $this->redPrice = $redPrice;
+    }
+
 
     /**
      * @return string

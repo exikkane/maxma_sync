@@ -27,19 +27,34 @@ class UsersService
      * @param UserSession|null $user_session Сессия пользователя
      * @param MaxmaLogger $logger Логгер
      */
+    private array $settings;
+    private array $session;
+    private ?MaxmaClient $maxmaClient;
+    private QueueRepository $queue_repository;
+    private UserRepository $user_repository;
+    private ?UserCache $user_cache;
+    private ?UserSession $user_session;
+    private MaxmaLogger $logger;
+
     public function __construct(
-        private readonly array           $settings,
-        private array                    &$session = [],
-        private ?MaxmaClient             $maxmaClient = null,
-        private readonly QueueRepository $queue_repository = new QueueRepository(),
-        private readonly UserRepository  $user_repository = new UserRepository(),
-        private ?UserCache               $user_cache = null,
-        private ?UserSession             $user_session = null,
-        private readonly MaxmaLogger     $logger = new MaxmaLogger()
+        array $settings,
+        array &$session = [],
+        ?MaxmaClient $maxmaClient = null,
+        ?QueueRepository $queue_repository = null,
+        ?UserRepository $user_repository = null,
+        ?UserCache $user_cache = null,
+        ?UserSession $user_session = null,
+        ?MaxmaLogger $logger = null
     ) {
-        $this->maxmaClient = $this->maxmaClient ?? new MaxmaClient($this->settings);
-        $this->user_session = $this->user_session ?? new UserSession($this->session);
-        $this->user_cache = $this->user_cache ?? new UserCache($this->settings['maxma_cache_ttl']);
+        $this->settings = $settings;
+        $this->session = &$session;
+
+        $this->maxmaClient = $maxmaClient ?? new MaxmaClient($this->settings);
+        $this->queue_repository = $queue_repository ?? new QueueRepository();
+        $this->user_repository = $user_repository ?? new UserRepository();
+        $this->user_cache = $user_cache ?? new UserCache($this->settings['maxma_cache_ttl']);
+        $this->user_session = $user_session ?? new UserSession($this->session);
+        $this->logger = $logger ?? new MaxmaLogger();
     }
 
     /**
@@ -100,17 +115,21 @@ class UsersService
 
             $payload = new ClientDto($phone, (string) $user_id);
 
-            $method = match ($key) {
-                self::BALANCE_CACHE_KEY => 'getBalance',
-                self::HISTORY_CACHE_KEY => 'getBonusHistory',
-                default => throw new \InvalidArgumentException("Unknown cache key $key"),
-            };
+            switch ($key) {
+                case self::BALANCE_CACHE_KEY:
+                    $method = 'getBalance';
+                    break;
+                case self::HISTORY_CACHE_KEY:
+                    $method = 'getBonusHistory';
+                    break;
+                default:
+                    throw new \InvalidArgumentException("Unknown cache key $key");
+            }
 
-            return $this->maxmaClient->$method($payload->toArray());
+                return $this->maxmaClient->$method($payload->toArray());
         } catch (ProcessingException $e) {
             if ($e->getCode() === ProcessingException::ERR_CLIENT_NOT_FOUND) {
-                $request = (new ClientUpdateDto($user_id))::fromArray($user_id, $user_data);
-                $this->queue_repository->add(RequestTypes::NEW_CLIENT, $user_id, $request->toArray());
+                $this->queueNewClient($user_id, $user_data);
                 $this->saveUserBonusesData($user_id, [], $key);
             }
 
@@ -131,7 +150,11 @@ class UsersService
     public function queueNewClient(int $user_id, array $user_data): void
     {
         $client_update_dto = new ClientUpdateDto($user_id);
-        $request = $client_update_dto::fromArray($user_id, $user_data);
+        $shop = [
+            'shopCode' => $this->settings['maxma_shop_code'] ?? '',
+            'shopName' => $this->settings['maxma_shop_name'] ?? '',
+        ];
+        $request = $client_update_dto::fromArray($user_id, $user_data, $shop);
         $this->queue_repository->add(RequestTypes::NEW_CLIENT, $user_id, $request->toArray());
     }
 

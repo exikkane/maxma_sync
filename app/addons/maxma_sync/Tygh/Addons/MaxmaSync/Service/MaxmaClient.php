@@ -20,15 +20,13 @@ use Tygh\Enum\Addons\MaxmaSync\RequestTypes;
 class MaxmaClient
 {
     private RequestFactory $requestFactory;
+    private Client $client;
 
-    public function __construct(
-        array $settings,
-        private readonly Client $client = new Client(),
-    )
+    public function __construct(array $settings, ?Client $client = null)
     {
         $api_key = $settings['api_key'];
         $test_mode = $settings['maxma_test_mode'];
-
+        $this->client = $client ?? new Client();
         $server_address = $test_mode === 'Y'
             ? Client::TEST_SERVER_ADDRESS
             : Client::DEFAULT_SERVER_ADDRESS;

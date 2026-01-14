@@ -6,10 +6,14 @@ use Tygh\Addons\MaxmaSync\Repository\UserRepository;
 
 class UserCache
 {
-    public function __construct(
-        private readonly int            $ttl,
-        private readonly UserRepository $userRepository = new UserRepository(),
-    ) {}
+    private int $ttl;
+    private UserRepository $userRepository;
+
+    public function __construct(int $ttl, ?UserRepository $userRepository = null)
+    {
+        $this->ttl = $ttl;
+        $this->userRepository = $userRepository ?? new UserRepository();
+    }
 
     public function get(int $user_id, string $key)
     {

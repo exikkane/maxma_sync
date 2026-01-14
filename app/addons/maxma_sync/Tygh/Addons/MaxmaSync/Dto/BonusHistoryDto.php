@@ -12,14 +12,24 @@ final class BonusHistoryDto
      *     operation_name: string
      * }>
      */
-    public array $items;
+    private $items;
 
-    public function __construct(
-        array $items,
-        public int $pagination,
-        public int $updatedAt
-    ) {
+    /** @var int */
+    private $pagination;
+
+    /** @var int */
+    private $updatedAt;
+
+    /**
+     * @param array<int, array{date: string, amount: int, operation: string, operation_name: string}> $items
+     * @param int $pagination
+     * @param int $updatedAt
+     */
+    public function __construct(array $items, int $pagination, int $updatedAt)
+    {
         $this->items = $items;
+        $this->pagination = $pagination;
+        $this->updatedAt = $updatedAt;
     }
 
     public static function fromApiResponse(object $response): self
@@ -49,5 +59,21 @@ final class BonusHistoryDto
         $result['updated_at'] = $this->updatedAt;
 
         return $result;
+    }
+
+    // Геттеры для доступа к свойствам (если нужно)
+    public function getItems(): array
+    {
+        return $this->items;
+    }
+
+    public function getPagination(): int
+    {
+        return $this->pagination;
+    }
+
+    public function getUpdatedAt(): int
+    {
+        return $this->updatedAt;
     }
 }

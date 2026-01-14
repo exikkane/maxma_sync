@@ -7,16 +7,27 @@ use Tygh\Enum\Addons\MaxmaSync\RequestTypes;
 
 final class RequestFactory
 {
-    private static array $called_payloads = [];
+    /** @var iterable<RequestBuilderInterface> */
+    private $builders;
+
+    /** @var MaxmaLogger */
+    private $logger;
+
+    /** @var array */
+    private static $called_payloads = [];
+
     /**
      * @param iterable<RequestBuilderInterface> $builders
+     * @param MaxmaLogger|null $logger
      */
-    public function __construct(
-        private readonly iterable $builders,
-        private readonly MaxmaLogger $logger = new MaxmaLogger()
-    ) {}
+    public function __construct(iterable $builders, ?MaxmaLogger $logger = null)
+    {
+        $this->builders = $builders;
+        $this->logger = $logger ?? new MaxmaLogger();
+    }
 
-    public function make(string $method, array $payload): object|bool
+
+    public function make(string $method, array $payload)
     {
         // используем кеш только для тех типов запроса, которые используются на витрине
         $use_cache = !in_array($method, RequestTypes::getQueueTypes(), true);

@@ -4,11 +4,19 @@ namespace Tygh\Addons\MaxmaSync\Dto;
 
 final class BalanceDto
 {
+    private int $balance;
+    private int $pending_bonuses;
+    private int $updated_at;
     public function __construct(
-        private readonly int $balance = 0,
-        private readonly int $pending_bonuses = 0,
-        private readonly int $updated_at = 0
-    ) {}
+        int $balance = 0,
+        int $pending_bonuses = 0,
+        int $updated_at = 0
+    ) {
+        $this->balance = $balance;
+        $this->pending_bonuses = $pending_bonuses;
+        $this->updated_at = $updated_at;
+    }
+
 
     /**
      * @return int

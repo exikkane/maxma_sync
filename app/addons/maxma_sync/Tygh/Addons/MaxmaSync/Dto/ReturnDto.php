@@ -6,18 +6,34 @@ use DateTime;
 
 final class ReturnDto
 {
+    private int $id;
+    private DateTime $executedAt;
+    private int $purchaseId;
+    private int $refundAmount;
+    private string $shopCode;
+    private string $shopName;
+    private array $items;
     /**
      * @param ReturnItemDto[] $items
      */
     public function __construct(
-        private readonly int $id,
-        private readonly DateTime $executedAt,
-        private readonly int $purchaseId,
-        private readonly int $refundAmount,
-        private readonly string $shopCode,
-        private readonly string $shopName,
-        private readonly array $items = []
-    ) {}
+        int $id,
+        DateTime $executedAt,
+        int $purchaseId,
+        int $refundAmount,
+        string $shopCode,
+        string $shopName,
+        array $items = []
+    ) {
+        $this->id = $id;
+        $this->executedAt = $executedAt;
+        $this->purchaseId = $purchaseId;
+        $this->refundAmount = $refundAmount;
+        $this->shopCode = $shopCode;
+        $this->shopName = $shopName;
+        $this->items = $items;
+    }
+
 
     public function getId(): string
     {

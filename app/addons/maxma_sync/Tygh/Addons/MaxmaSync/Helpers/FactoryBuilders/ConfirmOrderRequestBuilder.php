@@ -22,6 +22,6 @@ final class ConfirmOrderRequestBuilder implements RequestBuilderInterface
         }
 
         return (new Model\ConfirmOrderRequest())
-            ->setOrderId($payload['orderId']);
+            ->setOrderId((string)$payload['orderId']);
     }
 }

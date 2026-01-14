@@ -4,11 +4,19 @@ namespace Tygh\Addons\MaxmaSync\Dto;
 
 final class ReturnItemDto
 {
+    private string $sku;
+    private int $itemCount;
+    private int $price;
     public function __construct(
-        private readonly string $sku,
-        private readonly int $itemCount,
-        private readonly int $price
-    ) {}
+        string $sku,
+        int $itemCount,
+        int $price
+    ) {
+        $this->sku = $sku;
+        $this->itemCount = $itemCount;
+        $this->price = $price;
+    }
+
     public function getSku(): string
     {
         return $this->sku;

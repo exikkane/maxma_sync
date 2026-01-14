@@ -14,7 +14,7 @@ if ($mode === 'process_queue') {
     try {
         $queue_service = new QueueService($settings);
         $queue_service->processQueue();
-       // $queue_service->clearProcessedQueue();
+        $queue_service->clearProcessedQueue();
         fn_set_notification('N', __('notice'), __('maxma_sync.queue_synced'));
     } catch (\Exception $e) {
 

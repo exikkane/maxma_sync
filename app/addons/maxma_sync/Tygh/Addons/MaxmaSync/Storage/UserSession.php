@@ -4,9 +4,7 @@ namespace Tygh\Addons\MaxmaSync\Storage;
 
 class UserSession
 {
-    public function __construct(
-        private array &$session,
-    ) {}
+    public function __construct(array &$session) {}
 
     public function get(string $key): array
     {
@@ -27,6 +25,5 @@ class UserSession
     {
         $data['updated_at'] = TIME;
         $this->session[$key] = $data;
-
     }
 }

@@ -4,10 +4,16 @@ namespace Tygh\Addons\MaxmaSync\Dto;
 
 final class ShopDto
 {
+    private string $code;
+    private string $name;
     public function __construct(
-        private readonly string $code,
-        private readonly string $name
-    ) {}
+        string $code,
+        string $name
+    ) {
+        $this->code = $code;
+        $this->name = $name;
+    }
+
 
     /**
      * @return string
