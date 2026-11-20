@@ -8,7 +8,7 @@ final class CalculationQueryDto
      * @param RowDto[] $rows
      */
     public function __construct(
-        public ClientDto $client,
+        public ?ClientDto $client,
         public ShopDto $shop,
         public string $promocode,
         public int $applyBonuses,
@@ -16,6 +16,9 @@ final class CalculationQueryDto
         public array $rows
     ) {}
 
+    /**
+     * @return array<array-key, mixed>
+     */
     public function toArray(): array
     {
         $rows = [];
@@ -24,8 +27,7 @@ final class CalculationQueryDto
             $rows[] = $row->toArray();
         }
 
-        return [
-            'client'          => $this->client->toArray(),
+        return ($this->client ? ['client' => $this->client->toArray()] : []) + [
             'shop'            => $this->shop->toArray(),
             'promocode'       => $this->promocode,
             'applyBonuses'    => $this->applyBonuses,

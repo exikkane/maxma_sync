@@ -13,6 +13,7 @@ class MaxmaLogger
 
     /**
      * Логирование ошибки
+     * @param array<array-key, mixed> $context
      */
     public function error(string $message, array $context = []): void
     {
@@ -21,6 +22,7 @@ class MaxmaLogger
 
     /**
      * Логирование информационных сообщений
+     * @param array<array-key, mixed> $context
      */
     public function info(string $message, array $context = []): void
     {
@@ -29,6 +31,7 @@ class MaxmaLogger
 
     /**
      * Общий метод записи
+     * @param array<array-key, mixed> $context
      */
     private function write(string $level, string $message, array $context = []): void
     {
@@ -46,9 +49,13 @@ class MaxmaLogger
         @file_put_contents($this->logFile, $line, FILE_APPEND | LOCK_EX);
     }
 
+    /**
+     * @param array<array-key, mixed> $context
+     * @return array<array-key, mixed>
+     */
     private function normalizeContext(array $context): array
     {
-        array_walk_recursive($context, function (&$value) {
+        array_walk_recursive($context, function (mixed &$value): void {
             if (is_string($value) && self::isJson($value)) {
                 $value = json_decode($value, true, 512, JSON_THROW_ON_ERROR);
             }

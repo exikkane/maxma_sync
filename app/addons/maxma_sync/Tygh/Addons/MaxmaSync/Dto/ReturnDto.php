@@ -7,13 +7,13 @@ use DateTime;
 final class ReturnDto
 {
     /**
-     * @param ReturnItemDto[] $items
+     * @param list<array{sku: string, itemCount: int}> $items
      */
     public function __construct(
         private readonly int $id,
         private readonly DateTime $executedAt,
         private readonly int $purchaseId,
-        private readonly int $refundAmount,
+        private readonly float $refundAmount,
         private readonly string $shopCode,
         private readonly string $shopName,
         private readonly array $items = []
@@ -34,7 +34,7 @@ final class ReturnDto
         return (string) $this->purchaseId;
     }
 
-    public function getRefundAmount(): int
+    public function getRefundAmount(): float
     {
         return $this->refundAmount;
     }
@@ -50,13 +50,16 @@ final class ReturnDto
     }
 
     /**
-     * @return ReturnItemDto[]
+     * @return list<array{sku: string, itemCount: int}>
      */
     public function getItems(): array
     {
         return $this->items;
     }
 
+    /**
+     * @return array<array-key, mixed>
+     */
     public function toArray(): array
     {
         return [

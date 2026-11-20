@@ -15,16 +15,39 @@ final class ApplyReturnRequestBuilder implements RequestBuilderInterface
         return $method === RequestTypes::APPLY_RETURN;
     }
 
+    /**
+     * @param array<array-key, mixed> $payload
+     */
     public function build(array $payload): Model\ApplyReturnRequest
     {
+        if (!isset($payload['id'], $payload['executedAt'], $payload['purchaseId'], $payload['refundAmount'], $payload['items'])
+            || !is_numeric($payload['refundAmount'])
+            || (float) $payload['refundAmount'] < 0
+            || !is_array($payload['items'])
+            || !$payload['items']
+        ) {
+            throw new \InvalidArgumentException('Invalid MAXMA return transaction.');
+        }
+        $items = [];
+        foreach ($payload['items'] as $item) {
+            if (!is_array($item) || !is_string($item['sku'] ?? null) || $item['sku'] === '') {
+                throw new \InvalidArgumentException('Invalid MAXMA return item SKU.');
+            }
+            $count = $item['itemCount'] ?? null;
+            if ((!is_int($count) && !(is_string($count) && ctype_digit($count))) || (int) $count <= 0) {
+                throw new \InvalidArgumentException('Invalid MAXMA return item quantity.');
+            }
+            $items[] = ['sku' => $item['sku'], 'itemCount' => (int) $count];
+        }
+
         $return = new ReturnDto(
             $payload['id'],
             (new DateTime())->setTimestamp($payload['executedAt']),
             $payload['purchaseId'],
-            $payload['refundAmount'],
+            (float) $payload['refundAmount'],
             $payload['shopCode'] ?? 'CS-Cart',
             $payload['shopName'] ?? 'CS-Cart',
-            $payload['items']
+            $items
         );
 
         $request = new Model\ApplyReturnRequest();
@@ -41,7 +64,7 @@ final class ApplyReturnRequestBuilder implements RequestBuilderInterface
         foreach ($return->getItems() as $item) {
             $transaction_items[] = (new Model\ApplyReturnRequestTransactionItemsItem())
                 ->setSku($item['sku'])
-                ->setItemCount((int) $item['itemCount']);
+                ->setItemCount($item['itemCount']);
 
         }
         $transaction->setItems($transaction_items);

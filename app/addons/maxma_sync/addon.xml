@@ -12,7 +12,11 @@
     <language_variables>
         <item id="maxma" lang="ru">Maxma</item>
         <item id="maxma_sync.balance_updated" lang="ru">Баланс баллов пользователей был успешно обновлен</item>
-        <item id="'maxma_sync.queue_synced" lang="ru">Очередь была успешно обработана</item>
+        <item id="maxma_sync.queue_synced" lang="ru">Очередь была успешно обработана</item>
+        <item id="maxma_sync.queue_failed" lang="ru">Не обработано заданий MAXMA: [count]. Проверьте журнал модуля и порядок операций.</item>
+        <item id="maxma_sync.queue_busy" lang="ru">Очередь MAXMA уже обрабатывается.</item>
+        <item id="maxma_sync.queue_unresolved" lang="ru">В очереди MAXMA остались задания с ошибками или неизвестным результатом. Нужна сверка с MAXMA.</item>
+        <item id="maxma_sync.checkout_discount_changed" lang="ru">Скидка MAXMA изменилась. Проверьте новую сумму и подтвердите заказ ещё раз.</item>
         <item id="maxma_sync.process_queue" lang="ru"> Для обработки очереди запросов нажмите -
             &lt;a class="cm-ajax cm-comet btn btn-primary" href="[process_queue_url]"&gt;
             Обработать очередь сейчас

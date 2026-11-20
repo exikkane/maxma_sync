@@ -1,27 +1,38 @@
 <?php
 
+use Tygh\Tygh;
 use Tygh\Addons\MaxmaSync\Service\UsersService;
+use Tygh\Addons\MaxmaSync\Service\CartService;
 use Tygh\Registry;
 
 /**
  * @var string $mode
  */
-$cart = &Tygh::$app['session']['cart'];
-$auth = Tygh::$app['session']['auth'];
+$session = Tygh::$app['session'];
+$cart = (array) ($session['cart'] ?? []);
+$auth = (array) ($session['auth'] ?? []);
 
-$settings = Registry::get('addons.maxma_sync');
+$settings = (array) Registry::get('addons.maxma_sync');
 if (
     in_array($mode,
-        ['point_payment', 'cart', 'checkout'])
+        ['point_payment', 'cart', 'checkout'], true)
 ) {
-    if (!$auth['user_id'] || !$cart) {
+    $user_id = (int) ($auth['user_id'] ?? 0);
+    if ($user_id <= 0 || !$cart) {
         return;
     }
-    $user_service = new UsersService($settings, $auth);
-    $balance = $user_service->getUserBonusesData($auth['user_id'], $auth, $user_service::BALANCE_CACHE_KEY);
+    $cache = (array) ($session['maxma_sync_cache'] ?? []);
+    $user_service = new UsersService($settings, $cache);
+    $balance = $user_service->getUserBonusesData($user_id, $auth, $user_service::BALANCE_CACHE_KEY);
 
+    $session['maxma_sync_cache'] = $cache;
     Tygh::$app['view']->assign('balance', $balance);
 }
-if ($mode === 'delete_coupon') {
-    unset($cart['maxma_promotion_data']);
+if ($mode === 'delete_coupon'
+    && isset($cart['maxma_promotion_data']['coupon'])
+    && $cart['maxma_promotion_data']['coupon'] === ($_REQUEST['coupon_code'] ?? null)
+) {
+    CartService::clearExternalBonuses($cart);
+    CartService::clearCoupon($cart);
+    $session['cart'] = $cart;
 }

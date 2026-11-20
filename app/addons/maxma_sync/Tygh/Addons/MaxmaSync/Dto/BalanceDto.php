@@ -2,6 +2,8 @@
 
 namespace Tygh\Addons\MaxmaSync\Dto;
 
+use CloudLoyalty\Api\Generated\Model\GetBalanceResponse;
+
 final class BalanceDto
 {
     public function __construct(
@@ -37,23 +39,25 @@ final class BalanceDto
     /**
      * Создание DTO из ответа API
      */
-    public static function fromApiResponse(object $response): self
+    public static function fromApiResponse(GetBalanceResponse $response): ?self
     {
         $client_info = $response->getClient();
+        $balance = $client_info?->getBonuses();
 
-        if (empty($client_info)) {
-            return new self();
+        if ($client_info === null || $balance === null) {
+            return null;
         }
 
         return new self(
-            (int) $client_info->getBonuses(),
-            (int) $client_info->getPendingBonuses(),
+            $balance,
+            $client_info->getPendingBonuses() ?? 0,
             time()
         );
     }
 
     /**
      * Сериализация в массив
+     * @return array<array-key, mixed>
      */
     public function toArray(): array
     {

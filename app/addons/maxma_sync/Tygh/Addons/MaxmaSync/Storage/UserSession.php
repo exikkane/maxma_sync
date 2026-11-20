@@ -4,18 +4,25 @@ namespace Tygh\Addons\MaxmaSync\Storage;
 
 class UserSession
 {
+    /**
+     * @param array<array-key, mixed> $session
+     */
     public function __construct(
         private array &$session,
+        private readonly int $ttl = 120,
     ) {}
 
-    public function get(string $key): array
+    /**
+     * @return array<array-key, mixed>
+     */
+    public function get(int $user_id, string $key): array
     {
-        $data = $this->session[$key] ?? [];
+        $data = $this->session['maxma_sync'][$user_id][$key] ?? [];
 
         if (
-            empty($data)
-            || !isset($data['updated_at'])
-            || TIME - $data['updated_at'] > 120 // FIXME 2 минуты в сессии валиден кеш
+            !is_array($data)
+            || !is_int($data['updated_at'] ?? null)
+            || TIME - $data['updated_at'] >= $this->ttl
         ) {
             return [];
         }
@@ -23,10 +30,13 @@ class UserSession
         return $data;
     }
 
-    public function set(array $data, string $key): void
+    /**
+     * @param array<array-key, mixed> $data
+     */
+    public function set(int $user_id, array $data, string $key): void
     {
         $data['updated_at'] = TIME;
-        $this->session[$key] = $data;
+        $this->session['maxma_sync'][$user_id][$key] = $data;
 
     }
 }

@@ -13,19 +13,22 @@ final class SetOrderRequestBuilder implements RequestBuilderInterface
         return $method === RequestTypes::SET_ORDER;
     }
 
+    /**
+     * @param array<array-key, mixed> $payload
+     */
     public function build(array $payload): Model\V2SetOrderRequest
     {
-        $calc_query = $payload['calculationQuery'];
+        $calc_query = $payload['calculationQuery'] ?? null;
         if (!isset($calc_query)) {
             throw new \InvalidArgumentException('Payload for SET_ORDER must contain "calculationQuery" key.');
         }
 
         $request = new Model\V2SetOrderRequest();
 
-        if (!empty($calc_query['client']['phoneNumber'])) {
-            $clientObj = (new Model\ClientQuery())
-                ->setPhoneNumber((string)$calc_query['client']['phoneNumber']);
+        if (empty($calc_query['client']['phoneNumber'])) {
+            throw new \InvalidArgumentException('MAXMA orders require a customer phone number.');
         }
+        $clientObj = (new Model\ClientQuery())->setPhoneNumber($calc_query['client']['phoneNumber']);
 
         $shopObj = (new Model\ShopQuery())
             ->setCode($calc_query['shop']['code'] ?? 'CS-Cart')
@@ -39,8 +42,10 @@ final class SetOrderRequestBuilder implements RequestBuilderInterface
                 ->setExternalId((string)$product['externalId'])
                 ->setSku((string)$product['sku'])
                 ->setTitle((string)$product['title'])
-                ->setBlackPrice((float)($product['blackPrice'] ?? 0))
-                ->setRedPrice((float)($product['redPrice'] ?? 0));
+                ->setBlackPrice((float) $product['blackPrice']);
+            if (isset($product['redPrice'])) {
+                $productObj->setRedPrice((float) $product['redPrice']);
+            }
 
             $row = (new Model\CalculationQueryRow())
                 ->setId((string)$item['id'])

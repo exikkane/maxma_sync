@@ -15,6 +15,9 @@ final class NewClientRequestBuilder implements RequestBuilderInterface
         return $method === RequestTypes::NEW_CLIENT;
     }
 
+    /**
+     * @param array<array-key, mixed> $payload
+     */
     public function build(array $payload): Model\NewClientRequest
     {
         if (!isset($payload['client'])) {

@@ -15,6 +15,9 @@ final class UpdateClientRequestBuilder implements RequestBuilderInterface
         return $method === RequestTypes::UPDATE_CLIENT;
     }
 
+    /**
+     * @param array<array-key, mixed> $payload
+     */
     public function build(array $payload): Model\UpdateClientRequest
     {
         if (!isset($payload['client'])) {

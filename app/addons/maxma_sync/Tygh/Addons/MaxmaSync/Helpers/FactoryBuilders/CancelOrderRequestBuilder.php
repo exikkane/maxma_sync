@@ -13,6 +13,9 @@ final class CancelOrderRequestBuilder implements RequestBuilderInterface
         return $method === RequestTypes::CANCEL_ORDER;
     }
 
+    /**
+     * @param array<array-key, mixed> $payload
+     */
     public function build(array $payload): Model\CancelOrderRequest
     {
         if (!isset($payload['orderId'])) {
@@ -22,6 +25,6 @@ final class CancelOrderRequestBuilder implements RequestBuilderInterface
         }
 
         return (new Model\CancelOrderRequest())
-            ->setOrderId($payload['orderId']);
+            ->setOrderId((string) $payload['orderId']);
     }
 }

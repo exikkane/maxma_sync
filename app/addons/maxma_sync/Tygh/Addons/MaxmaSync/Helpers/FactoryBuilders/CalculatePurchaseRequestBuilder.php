@@ -3,7 +3,6 @@
 namespace Tygh\Addons\MaxmaSync\Helpers\FactoryBuilders;
 
 use CloudLoyalty\Api\Generated\Model;
-use Tygh\Addons\MaxmaSync\Dto\ClientDto;
 use Tygh\Addons\MaxmaSync\Dto\ProductDto;
 use Tygh\Addons\MaxmaSync\Dto\ShopDto;
 use Tygh\Addons\MaxmaSync\Interfaces\RequestBuilderInterface;
@@ -16,21 +15,17 @@ final class CalculatePurchaseRequestBuilder implements RequestBuilderInterface
         return $method === RequestTypes::CALCULATE_PURCHASE;
     }
 
+    /**
+     * @param array<array-key, mixed> $payload
+     */
     public function build(array $payload): Model\V2CalculatePurchaseRequest
     {
-        $calc_query = $payload['calculationQuery'];
+        $calc_query = $payload['calculationQuery'] ?? null;
         if (!isset($calc_query)) {
             throw new \InvalidArgumentException('Payload for CALCULATE_PURCHASE must contain "calculationQuery" key.');
         }
 
         $request = new Model\V2CalculatePurchaseRequest();
-
-        $client = new ClientDto(
-            $calc_query['client']['phoneNumber'],
-        );
-
-        $clientObj = (new Model\ClientQuery())
-            ->setPhoneNumber($client->getPhoneNumber());
 
         $shop = new ShopDto(
             $calc_query['shop']['code'],
@@ -50,7 +45,7 @@ final class CalculatePurchaseRequestBuilder implements RequestBuilderInterface
                 $item['product']['sku'],
                 $item['product']['title'],
                 (float) $item['product']['blackPrice'],
-                $item['product']['redPrice'] ?? 0
+                $item['product']['redPrice'] ?? null
             );
 
             $productObj = (new Model\Product())
@@ -59,7 +54,7 @@ final class CalculatePurchaseRequestBuilder implements RequestBuilderInterface
                 ->setTitle($product->getTitle())
                 ->setBlackPrice($product->getBlackPrice());
 
-            if ($product->getRedPrice() != 0) {
+            if ($product->getRedPrice() !== null) {
                 $productObj->setRedPrice($product->getRedPrice());
             }
 
@@ -72,11 +67,16 @@ final class CalculatePurchaseRequestBuilder implements RequestBuilderInterface
         }
 
         $calculationQueryObj = (new Model\CalculationQuery())
-            ->setClient($clientObj)
             ->setShop($shopObj)
             ->setRows($rows)
             ->setApplyBonuses($calc_query['applyBonuses'])
             ->setCollectBonuses($calc_query['collectBonuses']);
+
+        if (!empty($calc_query['client']['phoneNumber'])) {
+            $calculationQueryObj->setClient(
+                (new Model\ClientQuery())->setPhoneNumber($calc_query['client']['phoneNumber'])
+            );
+        }
 
         if (!empty($calc_query['promocode'])) {
             $calculationQueryObj->setPromocode($calc_query['promocode']);

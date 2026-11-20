@@ -11,6 +11,7 @@ interface RequestBuilderInterface
 
     /**
      * Собирает SDK-запрос из payload
+     * @param array<array-key, mixed> $payload
      */
     public function build(array $payload): object;
 }

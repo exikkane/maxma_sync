@@ -7,6 +7,7 @@ use Tygh\Enum\Addons\MaxmaSync\RequestTypes;
 
 final class RequestFactory
 {
+    /** @var array<string, array<string, object>> */
     private static array $called_payloads = [];
     /**
      * @param iterable<RequestBuilderInterface> $builders
@@ -16,13 +17,15 @@ final class RequestFactory
         private readonly MaxmaLogger $logger = new MaxmaLogger()
     ) {}
 
-    public function make(string $method, array $payload): object|bool
+    /**
+     * @param array<array-key, mixed> $payload
+     */
+    public function make(string $method, array $payload): object
     {
         // используем кеш только для тех типов запроса, которые используются на витрине
-        $use_cache = !in_array($method, RequestTypes::getQueueTypes(), true);
+        $payload_hash = in_array($method, RequestTypes::getQueueTypes(), true) ? null : $this->buildPayloadHash($payload);
 
-        if ($use_cache) {
-            $payload_hash = $this->buildPayloadHash($payload);
+        if ($payload_hash !== null) {
 
             if (isset(self::$called_payloads[$method][$payload_hash])) {
                 return self::$called_payloads[$method][$payload_hash];
@@ -32,7 +35,7 @@ final class RequestFactory
         foreach ($this->builders as $builder) {
             if ($builder->supports($method)) {
                 $request = $builder->build($payload);
-                if ($use_cache) {
+                if ($payload_hash !== null) {
                     self::$called_payloads[$method][$payload_hash] = $request;
                 }
 
@@ -41,8 +44,11 @@ final class RequestFactory
         }
         $this->logger->error("Unknown MAXMA method: {$method}");
 
-        return false;
+        throw new \InvalidArgumentException('Unknown MAXMA method: ' . $method);
     }
+    /**
+     * @param array<array-key, mixed> $payload
+     */
     private function buildPayloadHash(array $payload): string
     {
         return hash(

@@ -14,6 +14,9 @@ final class GetBalanceRequestBuilder implements RequestBuilderInterface
         return $method === RequestTypes::GET_BALANCE;
     }
 
+    /**
+     * @param array<array-key, mixed> $payload
+     */
     public function build(array $payload): Model\ClientQuery
     {
         $client = new ClientDto(

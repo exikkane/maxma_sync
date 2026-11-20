@@ -2,6 +2,8 @@
 
 namespace Tygh\Addons\MaxmaSync\Dto;
 
+use CloudLoyalty\Api\Generated\Model\GetBonusHistoryResponse;
+
 final class BonusHistoryDto
 {
     /**
@@ -12,8 +14,10 @@ final class BonusHistoryDto
      *     operation_name: string
      * }>
      */
+    /** @var list<array{date: string, amount: int, operation: string, operation_name: string}> */
     public array $items;
 
+    /** @param list<array{date: string, amount: int, operation: string, operation_name: string}> $items */
     public function __construct(
         array $items,
         public int $pagination,
@@ -22,7 +26,7 @@ final class BonusHistoryDto
         $this->items = $items;
     }
 
-    public static function fromApiResponse(object $response): self
+    public static function fromApiResponse(GetBonusHistoryResponse $response): self
     {
         $items = [];
 
@@ -30,18 +34,21 @@ final class BonusHistoryDto
             $items[] = [
                 'date'           => $entry->getAt()->format('Y-m-d H:i:s'),
                 'amount'         => (int) $entry->getAmount(),
-                'operation'      => (string) $entry->getOperation(),
-                'operation_name' => (string) $entry->getOperationName(),
+                'operation'      => $entry->getOperation(),
+                'operation_name' => $entry->getOperationName(),
             ];
         }
 
         return new self(
             $items,
-            (int) $response->getPagination()->getTotal(),
+            (int) ($response->getPagination()?->getTotal() ?? count($items)),
             time()
         );
     }
 
+    /**
+     * @return array<array-key, mixed>
+     */
     public function toArray(): array
     {
         $result = $this->items;

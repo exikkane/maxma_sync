@@ -11,15 +11,19 @@ use Tygh\Addons\MaxmaSync\Repository\QueueRepository;
 use Tygh\Addons\MaxmaSync\Repository\UserRepository;
 use Tygh\Enum\Addons\MaxmaSync\RequestTypes;
 use CloudLoyalty\Api\Exception\ProcessingException;
+use CloudLoyalty\Api\Exception\TransportException;
 
 class UsersService
 {
+    private readonly UserCache $user_cache;
+    private readonly UserSession $user_session;
+    private readonly MaxmaClient $maxmaClient;
     public const BALANCE_CACHE_KEY = 'balance';
     public const HISTORY_CACHE_KEY = 'history';
 
     /**
-     * @param array $settings Настройки модуля
-     * @param array $session Сессия пользователя
+     * @param array<array-key, mixed> $settings Настройки модуля
+     * @param array<array-key, mixed> $session Сессия пользователя
      * @param MaxmaClient|null $maxmaClient Клиент для работы с Maxma API
      * @param QueueRepository $queue_repository Репозиторий очереди
      * @param UserRepository $user_repository Репозиторий пользователей
@@ -30,32 +34,35 @@ class UsersService
     public function __construct(
         private readonly array           $settings,
         private array                    &$session = [],
-        private ?MaxmaClient             $maxmaClient = null,
+        ?MaxmaClient $maxmaClient = null,
         private readonly QueueRepository $queue_repository = new QueueRepository(),
         private readonly UserRepository  $user_repository = new UserRepository(),
-        private ?UserCache               $user_cache = null,
-        private ?UserSession             $user_session = null,
+        ?UserCache $user_cache = null,
+        ?UserSession $user_session = null,
         private readonly MaxmaLogger     $logger = new MaxmaLogger()
     ) {
-        $this->maxmaClient = $this->maxmaClient ?? new MaxmaClient($this->settings);
-        $this->user_session = $this->user_session ?? new UserSession($this->session);
-        $this->user_cache = $this->user_cache ?? new UserCache($this->settings['maxma_cache_ttl']);
+        $this->maxmaClient = $maxmaClient ?? new MaxmaClient($this->settings);
+        $this->user_session = $user_session ?? new UserSession($this->session, (int) ($this->settings['maxma_cache_ttl'] ?? 120));
+        $this->user_cache = $user_cache ?? new UserCache((int) ($this->settings['maxma_cache_ttl'] ?? 120));
     }
 
     /**
      * Сохраняет данные бонусов пользователя в репозиторий, сессию и кеш
      *
      * @param int $user_id
-     * @param array $data
+     * @param array<array-key, mixed> $data
      * @param string $key
      */
     public function saveUserBonusesData(int $user_id, array $data, string $key): void
     {
-        if (!empty($data['balance'])) {
+        if (!$data) {
+            return;
+        }
+        if ($key === self::BALANCE_CACHE_KEY && isset($data['balance']) && is_int($data['balance'])) {
             $this->user_repository->saveRewardPoints($user_id, $data['balance']);
         }
 
-        $this->user_session->set($data, $key);
+        $this->user_session->set($user_id, $data, $key);
         $this->user_cache->set($user_id, $data, $key);
     }
 
@@ -63,18 +70,18 @@ class UsersService
      * Получает данные бонусов пользователя из сессии, кеша или API
      *
      * @param int $user_id
-     * @param array $user_data
+     * @param array<array-key, mixed> $user_data
      * @param string $key
-     * @return array
+     * @return array<array-key, mixed>
      */
     public function getUserBonusesData(int $user_id, array $user_data, string $key): array
     {
-        $data = $this->user_session->get($key);
+        $data = $this->user_session->get($user_id, $key);
 
         if (empty($data)) {
             $data = $this->user_cache->get($user_id, $key);
             if (!empty($data)) {
-                $this->user_session->set($data, $key);
+                $this->user_session->set($user_id, $data, $key);
             } else {
                 $data = $this->fetchUserBonusesData($user_id, $user_data, $key);
                 $this->saveUserBonusesData($user_id, $data, $key);
@@ -87,9 +94,9 @@ class UsersService
      * Запрашивает данные бонусов пользователя из Maxma API
      *
      * @param int $user_id
-     * @param array $user_data
+     * @param array<array-key, mixed> $user_data
      * @param string $key
-     * @return array
+     * @return array<array-key, mixed>
      */
     public function fetchUserBonusesData(int $user_id, array $user_data, string $key): array
     {
@@ -98,6 +105,9 @@ class UsersService
                 ? $user_data['phone']
                 : $this->user_repository->getUserPhone($user_id);
 
+            if ($phone === null || trim($phone) === '') {
+                return [];
+            }
             $payload = new ClientDto($phone, (string) $user_id);
 
             $method = match ($key) {
@@ -107,17 +117,12 @@ class UsersService
             };
 
             return $this->maxmaClient->$method($payload->toArray());
-        } catch (ProcessingException $e) {
-            if ($e->getCode() === ProcessingException::ERR_CLIENT_NOT_FOUND) {
-                $request = (new ClientUpdateDto($user_id))::fromArray($user_id, $user_data);
-                $this->queue_repository->add(RequestTypes::NEW_CLIENT, $user_id, $request->toArray());
-                $this->saveUserBonusesData($user_id, [], $key);
+        } catch (ProcessingException | TransportException $e) {
+            if ($e instanceof ProcessingException && $e->getCode() === ProcessingException::ERR_CLIENT_NOT_FOUND) {
+                $user_data['phone'] = $phone ?? '';
+                $this->queueNewClient($user_id, $user_data);
             }
-
-            $this->logger->error('An error was appeared while processing user.', [
-                'user_data' => $user_data,
-                'exception' => $e->getHint()
-            ]);
+            $this->logger->error('MAXMA user data request failed.', ['user_id' => $user_id, 'code' => $e->getCode()]);
             return [];
         }
     }
@@ -126,19 +131,24 @@ class UsersService
      * Ставит нового клиента в очередь для добавления
      *
      * @param int $user_id
-     * @param array $user_data
+     * @param array<array-key, mixed> $user_data
      */
     public function queueNewClient(int $user_id, array $user_data): void
     {
-        $client_update_dto = new ClientUpdateDto($user_id);
-        $request = $client_update_dto::fromArray($user_id, $user_data);
+        if ($user_id <= 0 || trim($user_data['phone'] ?? '') === '') {
+            return;
+        }
+        $request = ClientUpdateDto::fromArray($user_id, $user_data, [
+            'shopCode' => $this->settings['maxma_shop_code'] ?? '',
+            'shopName' => $this->settings['maxma_shop_name'] ?? '',
+        ]);
         $this->queue_repository->add(RequestTypes::NEW_CLIENT, $user_id, $request->toArray());
     }
 
     /**
      * Массовое обновление баланса и истории пользователей
      *
-     * @param array $users_data
+     * @param array<array-key, mixed> $users_data
      */
     public function updateUserBalanceBulk(array $users_data): void
     {

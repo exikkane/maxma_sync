@@ -1,0 +1,14 @@
+parameters:
+    level: 8
+    phpVersion: 80100
+    paths:
+        - app/addons/maxma_sync
+    excludePaths:
+        analyse:
+            - app/addons/maxma_sync/lib/vendor
+    scanFiles:
+        - tests/stubs/cscart.php
+    stubFiles:
+        - tests/stubs/maxma-sdk.php
+    scanDirectories:
+        - app/addons/maxma_sync/lib/vendor/cloudloyalty/client-php/lib

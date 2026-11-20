@@ -30,6 +30,10 @@ final class ClientUpdateDto
         $this->shopName = $shopName;
     }
 
+    /**
+     * @param array<array-key, mixed> $shopData
+     * @param array<array-key, mixed> $userData
+     */
     public static function fromArray(int $userId, array $userData, array $shopData = []): self
     {
         return new self(
@@ -43,6 +47,9 @@ final class ClientUpdateDto
         );
     }
 
+    /**
+     * @return array<array-key, mixed>
+     */
     public function toArray(): array
     {
         return [

@@ -11,6 +11,9 @@ final class RowDto
         public ProductDto $product
     ) {}
 
+    /**
+     * @return array<array-key, mixed>
+     */
     public function toArray(): array
     {
         return [

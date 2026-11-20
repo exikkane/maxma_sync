@@ -23,6 +23,9 @@ final class ReturnItemDto
     {
         return $this->price;
     }
+    /**
+     * @return array<array-key, mixed>
+     */
     public function toArray(): array
     {
         return [

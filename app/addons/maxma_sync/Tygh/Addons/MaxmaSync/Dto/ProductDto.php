@@ -9,7 +9,7 @@ final class ProductDto
         private readonly string $sku,
         private readonly string $title,
         private readonly float $blackPrice,
-        private readonly float $redPrice
+        private readonly ?float $redPrice
     ) {}
 
     /**
@@ -45,15 +45,16 @@ final class ProductDto
     }
 
     /**
-     * @return float
+     * @return float|null
      */
-    public function getRedPrice(): float
+    public function getRedPrice(): ?float
     {
         return $this->redPrice;
     }
 
     /**
      * Сериализация в массив
+     * @return array<array-key, mixed>
      */
     public function toArray(): array
     {
@@ -64,7 +65,7 @@ final class ProductDto
             'blackPrice'  => $this->blackPrice,
         ];
 
-        if (!empty($this->redPrice)) {
+        if ($this->redPrice !== null) {
             $result['redPrice'] = $this->redPrice;
         }
         return $result;

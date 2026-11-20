@@ -18,10 +18,16 @@ class RequestTypes
     {
         return in_array($type, self::getAll(), true);
     }
+    /**
+     * @return array<array-key, mixed>
+     */
     public static function getAll(): array
     {
         return (new \ReflectionClass(self::class))->getConstants();
     }
+    /**
+     * @return array<array-key, mixed>
+     */
     public static function getQueueTypes(): array
     {
         return [

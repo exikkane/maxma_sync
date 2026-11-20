@@ -8,4 +8,5 @@ class QueueStatuses
     const PROCESSING = 'processing';
     const DONE = 'done';
     const ERROR = 'error';
+    const SUPERSEDED = 'superseded';
 }

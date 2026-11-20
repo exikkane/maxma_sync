@@ -13,6 +13,9 @@ final class ConfirmOrderRequestBuilder implements RequestBuilderInterface
         return $method === RequestTypes::CONFIRM_ORDER;
     }
 
+    /**
+     * @param array<array-key, mixed> $payload
+     */
     public function build(array $payload): Model\ConfirmOrderRequest
     {
         if (!isset($payload['orderId'])) {

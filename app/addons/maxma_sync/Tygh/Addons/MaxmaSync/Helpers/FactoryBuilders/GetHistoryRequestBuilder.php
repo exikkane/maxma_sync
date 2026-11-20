@@ -14,6 +14,9 @@ final class GetHistoryRequestBuilder implements RequestBuilderInterface
         return $method === RequestTypes::GET_BONUS_HISTORY;
     }
 
+    /**
+     * @param array<array-key, mixed> $payload
+     */
     public function build(array $payload): Model\GetBonusHistoryRequest
     {
         $client = new ClientDto(
