@@ -8,6 +8,7 @@ parameters:
             - app/addons/maxma_sync/lib/vendor
     scanFiles:
         - tests/stubs/cscart.php
+        - tests/stubs/cscart-lock.php
     stubFiles:
         - tests/stubs/maxma-sdk.php
     scanDirectories:

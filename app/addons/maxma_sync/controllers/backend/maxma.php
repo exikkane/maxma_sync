@@ -3,6 +3,7 @@
 use Tygh\Addons\MaxmaSync\Service\QueueService;
 use Tygh\Addons\MaxmaSync\Service\UsersService;
 use Tygh\Registry;
+use Tygh\Tygh;
 use Tygh\Enum\UserTypes;
 use Tygh\Enum\ObjectStatuses;
 
@@ -12,7 +13,8 @@ use Tygh\Enum\ObjectStatuses;
 $settings = (array) Registry::get('addons.maxma_sync');
 if ($mode === 'process_queue') {
     try {
-        $queue_service = new QueueService($settings);
+        /** @var QueueService $queue_service */
+        $queue_service = Tygh::$app['addons.maxma_sync.queue'];
         $queue_service->processQueue();
         fn_set_notification('N', __('notice'), __('maxma_sync.queue_synced'));
     } catch (\Exception $e) {

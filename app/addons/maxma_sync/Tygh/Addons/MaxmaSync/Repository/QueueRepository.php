@@ -157,26 +157,6 @@ class QueueRepository
     }
 
     /**
-     * Serialize competing enqueue or processing actions across store workers.
-     */
-    public function acquireLock(string $scope): bool
-    {
-        return (int) db_get_field(
-            'SELECT GET_LOCK(SHA2(CONCAT(DATABASE(), ?s), 256), ?i)',
-            ':maxma_sync:' . $scope,
-            $scope === 'worker' ? 0 : 5
-        ) === 1;
-    }
-
-    /**
-     * Release a lock held by this connection.
-     */
-    public function releaseLock(string $scope): void
-    {
-        db_get_field('SELECT RELEASE_LOCK(SHA2(CONCAT(DATABASE(), ?s), 256))', ':maxma_sync:' . $scope);
-    }
-
-    /**
      * Обновляет статус элемента очереди
      *
      * @param int $id ID элемента очереди

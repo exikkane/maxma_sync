@@ -10,6 +10,7 @@ use RuntimeException;
 use Tygh\Addons\MaxmaSync\Repository\QueueRepository;
 use Tygh\Enum\Addons\MaxmaSync\RequestTypes;
 use Tygh\Enum\Addons\MaxmaSync\QueueStatuses;
+use Tygh\Lock\Lock;
 use Tygh\Addons\MaxmaSync\Helpers\MaxmaLogger;
 
 class QueueService
@@ -17,12 +18,14 @@ class QueueService
     private readonly MaxmaClient $client;
     /**
      * @param array<array-key, mixed> $settings Настройки модуля
+     * @param QueueLocks $locks Блокировки очереди
      * @param MaxmaClient|null $client Клиент для работы с Maxma API
      * @param QueueRepository $repository Репозиторий очереди
      * @param MaxmaLogger $logger Логгер
      */
     public function __construct(
         private readonly array $settings,
+        private readonly QueueLocks $locks,
         ?MaxmaClient $client = null,
         private readonly QueueRepository $repository = new QueueRepository(),
         private readonly MaxmaLogger $logger = new MaxmaLogger()
@@ -38,22 +41,26 @@ class QueueService
      */
     public function processQueue(): void
     {
-        if (!$this->repository->acquireLock('worker')) {
+        $lock = $this->locks->acquire('worker');
+        if ($lock === null) {
             throw new RuntimeException(__('maxma_sync.queue_busy'));
         }
         try {
             try {
-                $this->processPending();
+                $this->processPending($lock);
             } finally {
-                $this->clearProcessedQueue();
+                if (!$lock->isExpired() && $lock->isAcquired()) {
+                    $this->clearProcessedQueue($lock);
+                }
             }
         } finally {
-            $this->repository->releaseLock('worker');
+            $lock->release();
         }
     }
 
-    private function processPending(): void
+    private function processPending(Lock $lock): void
     {
+        $this->locks->refresh($lock);
         $items = $this->repository->getPending();
         usort($items, static function (array $left, array $right): int {
             return self::priority($left['type']) <=> self::priority($right['type']);
@@ -61,6 +68,7 @@ class QueueService
 
         $failed = 0;
         foreach ($items as $item) {
+            $this->locks->refresh($lock);
             if (!$this->processItem($item)) {
                 ++$failed;
             }
@@ -178,13 +186,14 @@ class QueueService
      *
      * @return void
      */
-    public function clearProcessedQueue(): void
+    private function clearProcessedQueue(Lock $lock): void
     {
         $items = $this->repository->getProcessed();
         if (!$items) {
             return;
         }
         foreach ($items as $item) {
+            $this->locks->refresh($lock);
             $this->repository->deleteQueue((int) $item);
         }
     }

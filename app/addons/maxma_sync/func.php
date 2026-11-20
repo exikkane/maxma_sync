@@ -10,6 +10,7 @@ use Tygh\Tygh;
 use Tygh\Enum\OrderStatuses;
 use Tygh\Enum\Addons\MaxmaSync\QueueStatuses;
 use Tygh\Enum\SiteArea;
+use Tygh\Addons\MaxmaSync\Service\QueueLocks;
 use Tygh\Addons\MaxmaSync\Service\ReturnService;
 
 /**
@@ -221,17 +222,20 @@ function fn_maxma_sync_change_order_status_post(
     $queue = new QueueRepository();
 
     if ($queue_type !== RequestTypes::APPLY_RETURN) {
-        $lock = 'order-status:' . $order_id;
-        if (!$queue->acquireLock($lock)) {
+        /** @var QueueLocks $locks */
+        $locks = Tygh::$app['addons.maxma_sync.locks'];
+        $lock = $locks->acquire('order-status:' . $order_id, QueueLocks::ENQUEUE_WAIT_SECONDS);
+        if ($lock === null) {
             throw new RuntimeException('Could not obtain the MAXMA order status queue lock.');
         }
         try {
             $intent = $queue->latestTerminalIntent($order_id);
             if ($intent === null || $intent['type'] !== $queue_type) {
+                $locks->refresh($lock);
                 $queue->add($queue_type, $order_id, ['orderId' => (string) $order_id]);
             }
         } finally {
-            $queue->releaseLock($lock);
+            $lock->release();
         }
         return;
     }

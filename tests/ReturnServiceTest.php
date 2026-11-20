@@ -8,6 +8,9 @@ use PHPUnit\Framework\TestCase;
 use Tygh\Addons\MaxmaSync\Repository\QueueRepository;
 use Tygh\Addons\MaxmaSync\Repository\ReturnRepository;
 use Tygh\Addons\MaxmaSync\Service\ReturnService;
+use Tygh\Addons\MaxmaSync\Service\QueueLocks;
+use Tygh\Lock\Factory;
+use Tygh\Lock\Lock;
 
 final class ReturnServiceTest extends TestCase
 {
@@ -18,7 +21,12 @@ final class ReturnServiceTest extends TestCase
         $repo = $this->createMock(ReturnRepository::class);
         $repo->method('getApprovedItems')->with(20)->willReturn([$item, $other]);
         $queue = $this->createMock(QueueRepository::class);
-        $queue->method('acquireLock')->willReturn(true);
+        $lock = $this->createMock(Lock::class);
+        $lock->expects(self::exactly(3))->method('acquire')->willReturnOnConsecutiveCalls(false, true, true);
+        $lock->expects(self::once())->method('wait')->willReturn(true);
+        $lock->expects(self::exactly(2))->method('release');
+        $factory = $this->createMock(Factory::class);
+        $factory->expects(self::exactly(2))->method('createLock')->with('maxma_sync:returns:20', 60.0)->willReturn($lock);
         $payloads = [];
         $queue->method('hasReturn')->willReturnCallback(static function (int $id) use (&$payloads): bool {
             return isset($payloads[$id]);
@@ -31,7 +39,7 @@ final class ReturnServiceTest extends TestCase
             }
         );
 
-        $service = new ReturnService($repo, $queue);
+        $service = new ReturnService($repo, $queue, new QueueLocks($factory));
         $service->enqueueApprovedReturns(20, []);
         $service->enqueueApprovedReturns(20, []);
         self::assertSame(299.85, $payloads[10]['refundAmount']);

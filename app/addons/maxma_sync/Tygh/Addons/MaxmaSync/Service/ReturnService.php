@@ -14,7 +14,8 @@ class ReturnService
 {
     public function __construct(
         private readonly ReturnRepository $returns,
-        private readonly QueueRepository $queue
+        private readonly QueueRepository $queue,
+        private readonly QueueLocks $locks
     ) {
     }
 
@@ -25,8 +26,8 @@ class ReturnService
      */
     public function enqueueApprovedReturns(int $order_id, array $settings): void
     {
-        $lock = 'returns:' . $order_id;
-        if (!$this->queue->acquireLock($lock)) {
+        $lock = $this->locks->acquire('returns:' . $order_id, QueueLocks::ENQUEUE_WAIT_SECONDS);
+        if ($lock === null) {
             throw new \RuntimeException('Could not obtain the MAXMA return queue lock.');
         }
 
@@ -52,13 +53,14 @@ class ReturnService
             }
 
             foreach ($payloads as $id => $payload) {
+                $this->locks->refresh($lock);
                 if (!$this->queue->hasReturn($id, $order_id)) {
                     $payload['refundAmount'] = fn_format_price($payload['refundAmount']);
                     $this->queue->add(RequestTypes::APPLY_RETURN, $id, $payload);
                 }
             }
         } finally {
-            $this->queue->releaseLock($lock);
+            $lock->release();
         }
     }
 }

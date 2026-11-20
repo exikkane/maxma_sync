@@ -9,6 +9,7 @@ define('TIME', time());
 
 $addon = DIR_ROOT . '/app/addons/maxma_sync';
 require $addon . '/lib/vendor/autoload.php';
+require __DIR__ . '/stubs/cscart-lock.php';
 spl_autoload_register(static function (string $class) use ($addon): void {
     if (strpos($class, 'Tygh\\') !== 0) {
         return;
